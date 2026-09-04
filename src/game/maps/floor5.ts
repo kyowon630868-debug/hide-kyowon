@@ -14,6 +14,10 @@ export const FLOOR_5: FloorMap = {
     { col: 9, row: 9 },
   ],
   floorTint: 0x2f4152,
+  windows: [
+    { col: 1, row: 0, tilesWide: 10 },
+    { col: 13, row: 0, tilesWide: 15 },
+  ],
   rows: [
     '##############################', // 0
     '#...........#................#', // 1

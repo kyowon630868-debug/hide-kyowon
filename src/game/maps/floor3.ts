@@ -9,6 +9,7 @@ export const FLOOR_3: FloorMap = {
   name: '3층',
   spawn: { col: 5, row: 4 },
   elevator: { col: 24, row: 17 },
+  windows: [{ col: 1, row: 0, tilesWide: 8 }],
   spawnPoints: [
     { col: 2, row: 2 },
     { col: 8, row: 2 },

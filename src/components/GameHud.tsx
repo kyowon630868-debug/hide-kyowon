@@ -4,7 +4,11 @@ import type { GameState, HintKind, HintResult } from '../game-logic/types';
 import { HINT_COOLDOWN_MS, HINT_COST } from '../game/constants';
 import { FLOOR_ORDER } from '../game/maps';
 import { getFloor } from '../game/maps';
+import { bgm } from '../game/audio';
 import type { Proximity, RosterEntry } from '../types/game';
+
+/** 시작 연출 길이 (ms). 0~1.5 확인 · 1.5~2.5 회전 · 2.5~4.0 눈 감음 */
+const INTRO_MS = 4000;
 
 export interface HudApi {
   travelTo: (floorId: number) => void;
@@ -69,10 +73,30 @@ export function GameHud(props: Props) {
   const now = useNow(state.phase === 'HIDING' || state.phase === 'PLAYING');
   const role = GameRules.roleOf(state, selfId);
   const nameOf = (id: string) => roster.find((r) => r.id === id)?.name ?? '손님';
+  const seekerName = state.seekerId ? nameOf(state.seekerId) : '';
 
   const [pickerOpen, setPickerOpen] = useState(false);
   const [evadeToast, setEvadeToast] = useState(0);
   const prevEvade = useRef(0);
+
+  // 숨는 시간 진입 시각 → 시작 연출 타이머
+  const [hidingStartAt, setHidingStartAt] = useState(0);
+  const prevPhase = useRef(state.phase);
+  useEffect(() => {
+    if (state.phase !== prevPhase.current) {
+      if (state.phase === 'HIDING') {
+        setHidingStartAt(Date.now());
+        bgm.playHiding();
+      } else {
+        bgm.stop();
+      }
+      prevPhase.current = state.phase;
+    }
+  }, [state.phase]);
+
+  const introLeft = hidingStartAt ? hidingStartAt + INTRO_MS - now : 0;
+  const introActive = state.phase === 'HIDING' && introLeft > 0;
+  const introElapsed = INTRO_MS - introLeft;
 
   const myEvade = state.evadeCount[selfId] ?? 0;
   useEffect(() => {
@@ -149,28 +173,23 @@ export function GameHud(props: Props) {
         </Center>
       )}
 
-      {state.phase === 'HIDING' && (
-        <Center>
-          {role === 'SEEKER' ? (
-            <>
-              <h2 className="seeker">당신은 술래 👁</h2>
-              <p>
-                숨는 시간 <b>{clock((state.hidingEndsAt ?? now) - now)}</b>
-              </p>
-              <p className="muted">아직 움직일 수 없습니다</p>
-            </>
-          ) : role === 'HIDER' ? (
-            <>
-              <h2>숨어라!</h2>
-              <p>
-                남은 시간 <b>{clock((state.hidingEndsAt ?? now) - now)}</b>
-              </p>
-              <p className="muted">엘리베이터로 다른 층에 숨을 수도 있습니다</p>
-            </>
-          ) : (
-            <p>곧 시작합니다…</p>
-          )}
-        </Center>
+      {introActive && <IntroCinematic role={role} seekerName={seekerName} elapsed={introElapsed} />}
+
+      {state.phase === 'HIDING' && !introActive && role === 'SEEKER' && (
+        <div className="eyes-closed">
+          <div className="eyes-closed__inner">
+            <div className="eyes-closed__emoji">🙈</div>
+            <p>눈을 감고 세는 중…</p>
+            <b className="eyes-closed__time">{clock((state.hidingEndsAt ?? now) - now)}</b>
+            <p className="muted">🎵 창밖으로 남산타워가 보인다</p>
+          </div>
+        </div>
+      )}
+
+      {state.phase === 'HIDING' && !introActive && role !== 'SEEKER' && (
+        <div className="hiding-timer">
+          숨는 시간 <b>{clock((state.hidingEndsAt ?? now) - now)}</b>
+        </div>
       )}
 
       {state.phase === 'PLAYING' && (
@@ -257,6 +276,37 @@ function Center({ children }: { children: ReactNode }) {
   return (
     <div className="overlay">
       <div className="overlay__card">{children}</div>
+    </div>
+  );
+}
+
+/** 게임 시작 시네마틱 — 레터박스 + 3비트 자막 */
+function IntroCinematic({
+  role,
+  seekerName,
+  elapsed,
+}: {
+  role: 'SEEKER' | 'HIDER' | null;
+  seekerName: string;
+  elapsed: number;
+}) {
+  const seeker = role === 'SEEKER';
+  let caption: string;
+  if (elapsed < 1500) {
+    caption = seeker ? '다른 사람들을 바라본다…' : `술래: ${seekerName}`;
+  } else if (elapsed < 2500) {
+    caption = seeker ? '천천히 몸을 돌린다' : '지금이다 — 숨어라!';
+  } else {
+    caption = seeker ? '눈을 감는다…  🎵' : '술래가 눈을 감았다';
+  }
+
+  return (
+    <div className="cine">
+      <div className="cine__bar cine__bar--top" />
+      <div className="cine__bar cine__bar--bottom" />
+      <div className="cine__caption" key={caption}>
+        {caption}
+      </div>
     </div>
   );
 }

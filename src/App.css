@@ -446,3 +446,154 @@
   font-size: 13px;
   font-weight: 700;
 }
+
+/* ── 시작 시네마틱 ── */
+.cine {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.cine__bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 20%;
+  background: #000;
+  animation: cineBarIn 0.4s ease-out both;
+}
+.cine__bar--top {
+  top: 0;
+}
+.cine__bar--bottom {
+  bottom: 0;
+}
+@keyframes cineBarIn {
+  from {
+    transform: translateY(var(--from, -100%));
+  }
+}
+.cine__bar--bottom {
+  --from: 100%;
+}
+.cine__caption {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 22%;
+  text-align: center;
+  color: #fff;
+  font-size: 17px;
+  letter-spacing: 0.5px;
+  text-shadow: 0 2px 8px #000;
+  animation: cineCaption 0.5s ease-out both;
+}
+@keyframes cineCaption {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+/* ── 술래: 눈 감음 ── */
+.eyes-closed {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, rgba(4, 4, 12, 0.72), rgba(2, 2, 6, 0.94));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: breathe 5s ease-in-out infinite;
+}
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 0.92;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+.eyes-closed__inner {
+  text-align: center;
+  color: #cfd2ea;
+}
+.eyes-closed__emoji {
+  font-size: 34px;
+}
+.eyes-closed__time {
+  display: block;
+  font-size: 30px;
+  margin: 6px 0;
+  color: #fff;
+}
+
+.hiding-timer {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: #000000bb;
+  color: #fff;
+  font: 14px/1 ui-monospace, Consolas, monospace;
+}
+
+/* ── 채팅 ── */
+.chat {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #23263c;
+  border-radius: 8px;
+  overflow: hidden;
+  flex: 1;
+  min-height: 150px;
+}
+.chat__log {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  max-height: 240px;
+}
+.chat__empty {
+  color: #6b7096;
+  font-size: 12px;
+  margin: 0;
+}
+.chat__line {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: #d4d7ee;
+  word-break: break-word;
+}
+.chat__line b {
+  color: #9fb4ff;
+}
+.chat__line.is-me b {
+  color: #6ee787;
+}
+.chat__form {
+  display: flex;
+  border-top: 1px solid #23263c;
+}
+.chat__form input {
+  flex: 1;
+  border: 0;
+  background: #14162a;
+  color: #e7e9f5;
+  padding: 8px 10px;
+  font-size: 13px;
+  outline: none;
+}
+.chat__form button {
+  border: 0;
+  background: #3d6bff;
+  color: #fff;
+  padding: 0 14px;
+  cursor: pointer;
+}

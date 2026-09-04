@@ -9,8 +9,15 @@ const SEND_INTERVAL_MS = 100; // 위치 브로드캐스트 주기 (10Hz)
 
 /** 방 안에서 오가는 메시지 봉투. Room 은 종류만 구분하고 내용(body)은 해석하지 않는다. */
 interface Envelope {
-  k: 'move' | 'game' | 'action';
+  k: 'move' | 'game' | 'action' | 'chat';
   body: unknown;
+}
+
+export interface ChatMessage {
+  id: string;
+  name: string;
+  text: string;
+  ts: number;
 }
 
 type RoomEvents = {
@@ -22,6 +29,8 @@ type RoomEvents = {
   game: (fromId: string, body: unknown) => void;
   /** 클라이언트 → 심판 의도 전달 (힌트 사용 등). 심판만 처리 */
   action: (fromId: string, body: unknown) => void;
+  /** 실시간 채팅 */
+  chat: (msg: ChatMessage) => void;
   peerLeave: (id: string) => void;
 };
 
@@ -43,6 +52,7 @@ export class Room {
     snapshot: new Set(),
     game: new Set(),
     action: new Set(),
+    chat: new Set(),
     peerLeave: new Set(),
   };
 
@@ -113,6 +123,15 @@ export class Room {
     this.transport.send({ k: 'action', body } satisfies Envelope);
   }
 
+  /** 채팅 전송 — 보낸 사람 화면에도 바로 반영 */
+  sendChat(text: string): void {
+    const clean = text.trim().slice(0, 200);
+    if (!clean) return;
+    const msg: ChatMessage = { id: this.selfId, name: this.selfName, text: clean, ts: Date.now() };
+    this.transport.send({ k: 'chat', body: msg } satisfies Envelope);
+    this.emit('chat', msg);
+  }
+
   async leave(): Promise<void> {
     await this.transport.leave();
     this.roster.clear();
@@ -132,6 +151,13 @@ export class Room {
     }
     if (env.k === 'action') {
       this.emit('action', fromId, env.body);
+      return;
+    }
+    if (env.k === 'chat') {
+      const m = env.body as ChatMessage;
+      if (m && typeof m.text === 'string') {
+        this.emit('chat', { ...m, id: fromId, name: this.roster.get(fromId)?.name ?? m.name ?? '손님' });
+      }
       return;
     }
     if (env.k !== 'move') return;

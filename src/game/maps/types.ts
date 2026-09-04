@@ -23,6 +23,8 @@ export interface FloorMap {
   spawnPoints?: Array<{ col: number; row: number }>;
   /** 바닥 색조 (층마다 다르게 보이도록). 미지정 시 기본색 */
   floorTint?: number;
+  /** 창문 (남산 야경). 벽 위에 장식으로 얹는다 — 충돌 없음 */
+  windows?: Array<{ col: number; row: number; tilesWide: number }>;
 }
 
 export const isWall = (ch: string) => ch === '#';

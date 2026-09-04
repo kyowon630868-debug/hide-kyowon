@@ -173,20 +173,77 @@ export class WorldScene extends Phaser.Scene {
     const myId = this.room?.selfId ?? '';
     const myRole = GameRules.roleOf(s, myId);
 
-    if (s.phase === 'HIDING' && this.lastPhase !== 'HIDING' && myId in s.spawns) {
+    const enteringHiding = s.phase === 'HIDING' && this.lastPhase !== 'HIDING';
+    if (enteringHiding && myId in s.spawns) {
       const pts = this.floor.spawnPoints ?? [this.floor.spawn];
       const pt = pts[s.spawns[myId] % pts.length];
       const w = this.tileToWorld(pt.col, pt.row);
       (this.player.body as Phaser.Physics.Arcade.Body).reset(w.x, w.y);
     }
+
+    const leavingHiding = this.lastPhase === 'HIDING' && s.phase !== 'HIDING';
     this.lastPhase = s.phase;
 
     const frozen = s.phase === 'HIDING' && myRole === 'SEEKER';
     if (!this.traveling) this.player.setControlEnabled(!frozen);
 
+    if (enteringHiding && myRole === 'SEEKER') this.playSeekerIntro(s);
+    if (leavingHiding) {
+      const cam = this.cameras.main;
+      cam.startFollow(this.player, true, 0.15, 0.15);
+      cam.setZoom(1.7);
+    }
+
     this.paint(this.player, myId, s, true);
     this.remotes.forEach((rp, id) => this.paint(rp, id, s, false));
     this.emitHud();
+  }
+
+  /**
+   * 술래 시작 연출 (약 4초):
+   *  0.0~1.5s  도망자들 쪽을 바라본다 (카메라 팬 + 정면)
+   *  1.5~2.5s  몸을 돌린다 (측면 → 뒤통수)
+   *  2.5~4.0s  창밖을 보며 눈을 감는다 (카메라 술래에 고정)
+   */
+  private playSeekerIntro(s: GameState) {
+    const cam = this.cameras.main;
+    cam.stopFollow();
+    cam.setZoom(1.55);
+
+    this.player.forceFacing('down');
+
+    const look = this.hiderCentroid(s) ?? {
+      x: this.player.x + 30,
+      y: this.player.y + 70,
+    };
+    cam.pan(look.x, look.y, 1400, 'Sine.easeInOut');
+
+    this.time.delayedCall(1500, () => {
+      this.player.forceFacing('right');
+      cam.pan(this.player.x, this.player.y, 800, 'Sine.easeInOut');
+    });
+    this.time.delayedCall(2100, () => {
+      this.player.forceFacing('up');
+    });
+    this.time.delayedCall(2600, () => {
+      cam.startFollow(this.player, true, 0.12, 0.12);
+      cam.setZoom(1.7);
+    });
+  }
+
+  private hiderCentroid(s: GameState): { x: number; y: number } | null {
+    let sx = 0;
+    let sy = 0;
+    let n = 0;
+    for (const id of Object.keys(s.alive)) {
+      const p = this.netPositions.get(id);
+      if (p && p.floor === this.floor.id) {
+        sx += p.x;
+        sy += p.y;
+        n++;
+      }
+    }
+    return n > 0 ? { x: sx / n, y: sy / n } : null;
   }
 
   private paint(sprite: LocalPlayer | RemotePlayer, id: string, s: GameState, isLocal: boolean) {
@@ -324,6 +381,16 @@ export class WorldScene extends Phaser.Scene {
           this.elevatorTiles.push({ x, y });
         }
       }
+    });
+
+    // 창문 (남산 야경) — 벽 위 장식
+    (floor.windows ?? []).forEach((win) => {
+      const wpx = win.tilesWide * TILE_SIZE;
+      const img = this.add
+        .image(win.col * TILE_SIZE + wpx / 2, TILE_SIZE * 0.62, 'window-namsan')
+        .setDepth(2)
+        .setDisplaySize(wpx, TILE_SIZE * 1.6);
+      this.tileLayer.add(img);
     });
   }
 

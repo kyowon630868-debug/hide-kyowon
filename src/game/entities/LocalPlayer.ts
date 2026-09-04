@@ -47,6 +47,12 @@ export class LocalPlayer extends Phaser.Physics.Arcade.Sprite {
     this.controlEnabled = on;
   }
 
+  /** 연출용 — 방향을 강제로 지정 (스냅샷에도 반영되어 다른 화면에서도 같은 방향으로 보임) */
+  forceFacing(dir: Direction) {
+    this.facing = dir;
+    this.applyFacingTexture();
+  }
+
   preUpdate(time: number, delta: number) {
     super.preUpdate(time, delta);
 

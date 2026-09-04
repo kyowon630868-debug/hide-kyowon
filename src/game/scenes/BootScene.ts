@@ -13,7 +13,53 @@ export class BootScene extends Phaser.Scene {
   create() {
     this.makeTileTextures();
     this.makePlayerTextures();
+    this.makeWindowTexture();
     this.scene.start('world');
+  }
+
+  /** 사무실 창문 + 남산타워 야경 (임시 그래픽) — 256 x 72 */
+  private makeWindowTexture() {
+    const W = 256;
+    const H = 72;
+    const g = this.add.graphics();
+
+    // 노을~야경 하늘
+    g.fillGradientStyle(0x1a1330, 0x1a1330, 0x3a2350, 0x6b3a4a, 1);
+    g.fillRect(0, 0, W, H);
+
+    // 도시 실루엣
+    g.fillStyle(0x0e0b1c, 0.95);
+    const bh = [22, 34, 18, 40, 28, 46, 24, 38, 30, 20, 42, 26];
+    for (let i = 0; i < bh.length; i++) {
+      g.fillRect(i * 22, H - bh[i], 20, bh[i]);
+    }
+    // 창문 불빛
+    g.fillStyle(0xffd98a, 0.8);
+    for (let i = 0; i < 40; i++) {
+      g.fillRect(6 + ((i * 37) % (W - 12)), 20 + ((i * 53) % (H - 30)), 2, 2);
+    }
+
+    // 남산타워 (오른쪽)
+    const tx = W - 74;
+    g.fillStyle(0x2a2740);
+    g.fillTriangle(tx - 10, H, tx + 10, H, tx, H - 30); // 산
+    g.fillStyle(0x4a4560);
+    g.fillRect(tx - 2, H - 54, 4, 26); // 기둥
+    g.fillStyle(0xb9b4d0);
+    g.fillRect(tx - 7, H - 60, 14, 8); // 전망대
+    g.fillRect(tx - 1, H - 70, 2, 12); // 첨탑
+    g.fillStyle(0xff5555);
+    g.fillCircle(tx, H - 71, 1.6); // 항공등
+
+    // 창틀
+    g.lineStyle(4, 0x20233a);
+    g.strokeRect(2, 2, W - 4, H - 4);
+    g.lineStyle(3, 0x20233a);
+    g.lineBetween(W / 2, 2, W / 2, H - 2);
+    g.lineBetween(2, H / 2, W - 2, H / 2);
+
+    g.generateTexture('window-namsan', W, H);
+    g.destroy();
   }
 
   private makeTileTextures() {

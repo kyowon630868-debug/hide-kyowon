@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import { useRoom } from '../hooks/useRoom';
 import { useGame } from '../hooks/useGame';
+import { useChat } from '../hooks/useChat';
 import { GameCanvas, type CanvasEvent } from '../game/GameCanvas';
 import { GameHud, type HudApi } from './GameHud';
+import { ChatPanel } from './ChatPanel';
 import { GameRules } from '../game-logic/rules';
+import { bgm } from '../game/audio';
 import type { HintResult } from '../game-logic/types';
 import type { Proximity, RoomOptions } from '../types/game';
 import type { ConnStatus } from '../net/transport';
@@ -23,6 +26,7 @@ export function GameScreen({
 }) {
   const { room, roster, status } = useRoom(options);
   const { sync, state } = useGame(room, options.isHost);
+  const chat = useChat(room);
 
   const [floorName, setFloorName] = useState('');
   const [floorId, setFloorId] = useState(3);
@@ -61,7 +65,7 @@ export function GameScreen({
   }
 
   return (
-    <div className="screen">
+    <div className="screen" onPointerDown={() => bgm.unlock()}>
       <aside className="screen__side">
         <button className="btn btn--ghost" onClick={onLeave}>
           ← 나가기
@@ -105,10 +109,7 @@ export function GameScreen({
           </ul>
         </div>
 
-        <p className="hint-tip">
-          엘리베이터로 다른 층 이동 · 술래는 힌트 사용(점수 소모) · 도망자는 술래를
-          따돌리면 보너스
-        </p>
+        <ChatPanel messages={chat.messages} selfId={selfId} onSend={chat.send} />
       </aside>
 
       <GameCanvas room={room} sync={sync} onEvent={handleEvent}>
