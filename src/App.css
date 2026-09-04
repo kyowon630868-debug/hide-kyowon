@@ -1,0 +1,361 @@
+* {
+  box-sizing: border-box;
+}
+
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #0e0f1c;
+  color: #e7e9f5;
+  font-family: system-ui, sans-serif;
+}
+
+.app__bar {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 10px 16px;
+  border-bottom: 1px solid #23263c;
+}
+
+.app__phase {
+  font-size: 13px;
+  color: #8b90b5;
+}
+
+.app__stage {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+/* ── 로비 ── */
+.lobby {
+  width: min(420px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.lobby__title {
+  margin: 0;
+  font-size: 30px;
+  letter-spacing: 1px;
+}
+.lobby__sub {
+  margin: -6px 0 6px;
+  color: #8b90b5;
+  font-size: 13px;
+}
+.lobby__error {
+  margin: 0;
+  color: #ff8080;
+  font-size: 13px;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  font-size: 13px;
+  color: #b9bdda;
+}
+.field input[type='text'],
+.field > input {
+  padding: 9px 10px;
+  border-radius: 6px;
+  border: 1px solid #2f3350;
+  background: #14162a;
+  color: #e7e9f5;
+  font-size: 14px;
+}
+.radio {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #e7e9f5;
+  font-size: 13px;
+}
+.lobby__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
+}
+.join {
+  display: flex;
+  gap: 8px;
+}
+.join input {
+  flex: 1;
+  padding: 9px 10px;
+  border-radius: 6px;
+  border: 1px solid #2f3350;
+  background: #14162a;
+  color: #e7e9f5;
+  font-size: 14px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+.btn {
+  padding: 9px 14px;
+  border-radius: 6px;
+  border: 1px solid #2f3350;
+  background: #23263c;
+  color: #e7e9f5;
+  font-size: 14px;
+  cursor: pointer;
+}
+.btn--primary {
+  background: #3d6bff;
+  border-color: #3d6bff;
+  font-weight: 600;
+}
+.btn--ghost {
+  background: transparent;
+  align-self: flex-start;
+}
+
+/* ── 게임 화면 ── */
+.screen {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  width: 100%;
+  max-width: 1180px;
+}
+.screen__side {
+  width: 220px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.panel {
+  border: 1px solid #23263c;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 13px;
+  background: #12142400;
+}
+.panel__row {
+  display: flex;
+  justify-content: space-between;
+  padding: 3px 0;
+  color: #b9bdda;
+}
+.panel__row b,
+.panel__row span:last-child {
+  color: #e7e9f5;
+}
+.panel__head {
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.code {
+  letter-spacing: 3px;
+}
+.roster {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.roster li {
+  padding: 5px 8px;
+  border-radius: 5px;
+  background: #1a1c30;
+}
+.roster li.is-me {
+  background: #23325e;
+}
+.dot--joined {
+  color: #6ee787;
+}
+.dot--connecting {
+  color: #e3b341;
+}
+.dot--error {
+  color: #ff8080;
+}
+.hint {
+  font-size: 12px;
+  color: #8b90b5;
+  line-height: 1.5;
+  margin: 0;
+}
+
+@media (max-width: 760px) {
+  .screen {
+    flex-direction: column;
+  }
+  .screen__side {
+    width: 100%;
+  }
+}
+
+.game-canvas {
+  position: relative;
+  width: min(900px, 100%);
+  aspect-ratio: 4 / 3;
+  border: 1px solid #23263c;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.game-canvas__host,
+.game-canvas__host canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.hud {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  display: flex;
+  gap: 6px;
+  pointer-events: none;
+}
+
+.hud__chip {
+  font: 12px/1 ui-monospace, Consolas, monospace;
+  color: #fff;
+  background: #000000aa;
+  border-radius: 4px;
+  padding: 5px 8px;
+}
+
+.hud__chip--muted {
+  color: #b9bdda;
+}
+
+/* ── 게임 오버레이 (캔버스 위) ── */
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(6, 7, 16, 0.55);
+}
+.overlay__card {
+  background: #14162a;
+  border: 1px solid #2f3350;
+  border-radius: 12px;
+  padding: 22px 26px;
+  text-align: center;
+  min-width: 240px;
+  max-width: 86%;
+}
+.overlay__card h2 {
+  margin: 0 0 10px;
+  font-size: 22px;
+}
+.overlay__card h2.seeker {
+  color: #ff8080;
+}
+.overlay__card p {
+  margin: 6px 0;
+  font-size: 14px;
+}
+.overlay__card .muted {
+  color: #8b90b5;
+  font-size: 13px;
+}
+.overlay__card .btn {
+  margin-top: 14px;
+}
+
+.topbar {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px;
+  background: #000000bb;
+  border-radius: 999px;
+  font: 13px/1 ui-monospace, Consolas, monospace;
+  color: #fff;
+  white-space: nowrap;
+}
+.tag {
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 12px;
+}
+.tag--seeker {
+  background: #7a2230;
+  color: #ffd9d9;
+}
+.tag--hider {
+  background: #23507a;
+  color: #d9ecff;
+}
+.prox {
+  padding: 3px 8px;
+  border-radius: 999px;
+}
+.prox--safe {
+  color: #8fe6a4;
+}
+.prox--warn {
+  color: #ffd66b;
+  background: #4a3a12;
+}
+.prox--danger {
+  color: #ff9a9a;
+  background: #5a1e24;
+  animation: proxpulse 0.7s ease-in-out infinite alternate;
+}
+@keyframes proxpulse {
+  from {
+    opacity: 0.65;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.board {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.board li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: #1a1c30;
+  font-size: 13px;
+}
+.board li.is-me {
+  background: #23325e;
+}
+.board__name {
+  flex: 1;
+  text-align: left;
+}
+.board__score {
+  font-weight: 700;
+}
+.roster__x {
+  color: #ff8f8f;
+  font-size: 11px;
+}
