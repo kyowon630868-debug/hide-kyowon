@@ -20,6 +20,18 @@ const SEEKER_TINT = 0xff6b6b;
 const CAUGHT_TINT = 0x8a8a8a;
 const NEUTRAL_TINT = 0xffffff;
 
+const PLAY_ZOOM = 2;
+const INTRO_ZOOM = 1.5;
+
+/** 타일 문자 → 바닥 텍스처 */
+const FLOOR_TEX: Record<string, string> = {
+  '.': 'floor-office',
+  ',': 'floor-corridor',
+  '=': 'floor-meeting',
+  '~': 'floor-restroom',
+  '%': 'floor-pantry',
+};
+
 /**
  * WorldScene — 층 하나를 그리고, 내 캐릭터를 움직이고, 다른 플레이어를 보여주고,
  * 게임 규칙(GameSync)에 위치를 넘기고, 엘리베이터·힌트 요청을 처리한다.
@@ -65,8 +77,9 @@ export class WorldScene extends Phaser.Scene {
     this.player = new LocalPlayer(this, spawn.x, spawn.y, myName);
     this.physics.add.collider(this.player, this.walls);
 
-    this.cameras.main.startFollow(this.player, true, 0.15, 0.15);
-    this.cameras.main.setZoom(1.7);
+    this.cameras.main.startFollow(this.player, true, 0.12, 0.12);
+    this.cameras.main.setZoom(PLAY_ZOOM);
+    this.cameras.main.setRoundPixels(true);
     this.applyBounds();
 
     this.connectRoom();
@@ -191,7 +204,7 @@ export class WorldScene extends Phaser.Scene {
     if (leavingHiding) {
       const cam = this.cameras.main;
       cam.startFollow(this.player, true, 0.15, 0.15);
-      cam.setZoom(1.7);
+      cam.setZoom(PLAY_ZOOM);
     }
 
     this.paint(this.player, myId, s, true);
@@ -208,7 +221,7 @@ export class WorldScene extends Phaser.Scene {
   private playSeekerIntro(s: GameState) {
     const cam = this.cameras.main;
     cam.stopFollow();
-    cam.setZoom(1.55);
+    cam.setZoom(INTRO_ZOOM);
 
     this.player.forceFacing('down');
 
@@ -227,7 +240,7 @@ export class WorldScene extends Phaser.Scene {
     });
     this.time.delayedCall(2600, () => {
       cam.startFollow(this.player, true, 0.12, 0.12);
-      cam.setZoom(1.7);
+      cam.setZoom(PLAY_ZOOM);
     });
   }
 
@@ -362,7 +375,7 @@ export class WorldScene extends Phaser.Scene {
     this.walls.clear(true, true);
     this.elevatorTiles = [];
 
-    const tint = floor.floorTint ?? 0xffffff;
+    const legacyTint = floor.floorTint; // 아직 안 꾸민 1·5층
 
     floor.rows.forEach((row, r) => {
       for (let c = 0; c < row.length; c++) {
@@ -370,27 +383,58 @@ export class WorldScene extends Phaser.Scene {
         const { x, y } = this.tileToWorld(c, r);
 
         if (ch === '#') {
-          this.walls.create(x, y, 'tile-wall').setDepth(1);
+          this.walls.create(x, y, 'wall').setDepth(1);
+          continue;
+        }
+        if (ch === 'h') {
+          this.walls.create(x, y, 'wall-low').setDepth(3);
           continue;
         }
 
-        this.tileLayer.add(this.add.image(x, y, 'tile-floor').setDepth(0).setTint(tint));
-        if (ch === 'D') this.tileLayer.add(this.add.image(x, y, 'tile-door').setDepth(1));
-        if (ch === 'E') {
-          this.tileLayer.add(this.add.image(x, y, 'tile-elevator').setDepth(1));
-          this.elevatorTiles.push({ x, y });
-        }
+        const key = FLOOR_TEX[ch] ?? 'floor-office';
+        const img = this.add.image(x, y, key).setDepth(0);
+        if (legacyTint && key === 'floor-office') img.setTint(legacyTint);
+        this.tileLayer.add(img);
+
+        if (ch === 'D') this.tileLayer.add(this.add.image(x, y, 'door').setDepth(1));
+        if (ch === 'E') this.elevatorTiles.push({ x, y });
       }
     });
 
-    // 창문 (남산 야경) — 벽 위 장식
+    // 엘리베이터 문 (E 타일 무리의 중심에 2x2 로)
+    if (this.elevatorTiles.length) {
+      const cx = this.elevatorTiles.reduce((s, t) => s + t.x, 0) / this.elevatorTiles.length;
+      const cy = this.elevatorTiles.reduce((s, t) => s + t.y, 0) / this.elevatorTiles.length;
+      this.tileLayer.add(
+        this.add.image(cx, cy, 'elevator-door').setDepth(3).setDisplaySize(TILE_SIZE * 2, TILE_SIZE * 2),
+      );
+    }
+
+    // 창문 (남산 야경)
     (floor.windows ?? []).forEach((win) => {
       const wpx = win.tilesWide * TILE_SIZE;
-      const img = this.add
-        .image(win.col * TILE_SIZE + wpx / 2, TILE_SIZE * 0.62, 'window-namsan')
-        .setDepth(2)
-        .setDisplaySize(wpx, TILE_SIZE * 1.6);
-      this.tileLayer.add(img);
+      this.tileLayer.add(
+        this.add
+          .image(win.col * TILE_SIZE + wpx / 2, TILE_SIZE * 0.6, 'window-namsan')
+          .setDepth(2)
+          .setDisplaySize(wpx, TILE_SIZE * 1.55),
+      );
+    });
+
+    // 가구/소품
+    (floor.props ?? []).forEach((p) => {
+      const { x, y } = this.tileToWorld(p.col, p.row);
+      if (p.solid) {
+        const s = this.walls.create(x, y, p.kind) as Phaser.Physics.Arcade.Sprite;
+        s.setDepth(4);
+        // 충돌 박스는 발밑 위주로 살짝 줄인다
+        const body = s.body as Phaser.Physics.Arcade.StaticBody;
+        body.setSize(s.width * 0.8, Math.max(12, s.height * 0.5));
+        body.position.set(s.x - body.width / 2, s.y + s.height / 2 - body.height);
+        body.updateCenter();
+      } else {
+        this.tileLayer.add(this.add.image(x, y, p.kind).setDepth(4));
+      }
     });
   }
 

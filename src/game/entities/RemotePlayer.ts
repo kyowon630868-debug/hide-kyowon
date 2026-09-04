@@ -1,6 +1,8 @@
 import Phaser from 'phaser';
 import type { Direction, PlayerSnapshot } from '../../types/game';
 import { NET } from '../constants';
+import { CHAR_SHEET } from '../assets';
+import { applyCharAnim } from './playerAnim';
 
 interface Sample {
   t: number; // 로컬 도착 시각 (performance.now)
@@ -23,7 +25,7 @@ export class RemotePlayer extends Phaser.GameObjects.Sprite {
   readonly label: Phaser.GameObjects.Text;
 
   constructor(scene: Phaser.Scene, snap: PlayerSnapshot) {
-    super(scene, snap.x, snap.y, 'player-down');
+    super(scene, snap.x, snap.y, CHAR_SHEET, 0);
     scene.add.existing(this);
     this.setDepth(9);
     this.floor = snap.floor;
@@ -89,21 +91,7 @@ export class RemotePlayer extends Phaser.GameObjects.Sprite {
 
   private applyFacing(dir: Direction, moving: boolean) {
     this.lastDir = dir;
-    switch (dir) {
-      case 'down':
-        this.setTexture('player-down').setFlipX(false);
-        break;
-      case 'up':
-        this.setTexture('player-up').setFlipX(false);
-        break;
-      case 'left':
-        this.setTexture('player-side').setFlipX(true);
-        break;
-      case 'right':
-        this.setTexture('player-side').setFlipX(false);
-        break;
-    }
-    this.setScale(1, moving ? 1 + Math.sin(performance.now() * 0.02) * 0.05 : 1);
+    applyCharAnim(this, dir, moving);
   }
 
   destroy(fromScene?: boolean): void {

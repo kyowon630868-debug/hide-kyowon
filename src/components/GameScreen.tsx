@@ -4,18 +4,10 @@ import { useGame } from '../hooks/useGame';
 import { useChat } from '../hooks/useChat';
 import { GameCanvas, type CanvasEvent } from '../game/GameCanvas';
 import { GameHud, type HudApi } from './GameHud';
-import { ChatPanel } from './ChatPanel';
-import { GameRules } from '../game-logic/rules';
+import { ChatDock } from './ChatDock';
 import { bgm } from '../game/audio';
 import type { HintResult } from '../game-logic/types';
 import type { Proximity, RoomOptions } from '../types/game';
-import type { ConnStatus } from '../net/transport';
-
-const STATUS_LABEL: Record<ConnStatus, string> = {
-  connecting: '연결 중…',
-  joined: '접속됨',
-  error: '연결 실패',
-};
 
 export function GameScreen({
   options,
@@ -35,6 +27,7 @@ export function GameScreen({
   const [traveling, setTraveling] = useState<{ to: number } | null>(null);
   const [hint, setHint] = useState<{ result: HintResult; cooldownUntil: number } | null>(null);
   const [api, setApi] = useState<HudApi | null>(null);
+  const [rosterOpen, setRosterOpen] = useState(false);
 
   const selfId = room?.selfId ?? '';
 
@@ -66,53 +59,33 @@ export function GameScreen({
 
   return (
     <div className="screen" onPointerDown={() => bgm.unlock()}>
-      <aside className="screen__side">
-        <button className="btn btn--ghost" onClick={onLeave}>
+      <GameCanvas room={room} sync={sync} onEvent={handleEvent}>
+        <button className="leave-btn" onClick={onLeave}>
           ← 나가기
         </button>
 
-        <div className="panel">
-          <div className="panel__row">
-            <span>방 코드</span>
-            <b className="code">{options.code}</b>
-          </div>
-          <div className="panel__row">
-            <span>접속 방식</span>
-            <span>{options.mode === 'supabase' ? '온라인' : '로컬'}</span>
-          </div>
-          <div className="panel__row">
-            <span>상태</span>
-            <span className={`dot dot--${status}`}>{STATUS_LABEL[status]}</span>
-          </div>
-          <div className="panel__row">
-            <span>게임</span>
-            <span>
-              {GameRules.label(state.phase)}
-              {options.isHost ? ' · 방장' : ''}
-            </span>
-          </div>
+        <div className={`roomtag ${rosterOpen ? 'is-open' : ''}`}>
+          <button className="roomtag__head" onClick={() => setRosterOpen((v) => !v)}>
+            <span className="roomtag__code">{options.code}</span>
+            <span className={`roomtag__dot roomtag__dot--${status}`} />
+            <span className="roomtag__count">{roster.length}/5</span>
+          </button>
+          {rosterOpen && (
+            <ul className="roomtag__list">
+              {roster.map((p) => {
+                const caught = p.id in state.alive && !state.alive[p.id];
+                return (
+                  <li key={p.id} className={p.id === selfId ? 'is-me' : ''}>
+                    {p.name}
+                    {p.id === state.seekerId && ' 👁'}
+                    {caught && ' ✖'}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </div>
 
-        <div className="panel">
-          <div className="panel__head">참여 인원 {roster.length} / 5</div>
-          <ul className="roster">
-            {roster.map((p) => {
-              const caught = p.id in state.alive && !state.alive[p.id];
-              return (
-                <li key={p.id} className={p.id === selfId ? 'is-me' : ''}>
-                  {p.name}
-                  {p.id === selfId && ' (나)'}
-                  {caught && <span className="roster__x"> 잡힘</span>}
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-
-        <ChatPanel messages={chat.messages} selfId={selfId} onSend={chat.send} />
-      </aside>
-
-      <GameCanvas room={room} sync={sync} onEvent={handleEvent}>
         <GameHud
           state={state}
           roster={roster}
@@ -128,6 +101,8 @@ export function GameScreen({
           onStart={() => sync?.startGame(roster.map((r) => r.id))}
           onRestart={() => sync?.restart()}
         />
+
+        <ChatDock messages={chat.messages} selfId={selfId} onSend={chat.send} />
       </GameCanvas>
     </div>
   );

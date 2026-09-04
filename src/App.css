@@ -3,41 +3,49 @@
 }
 
 .app {
-  min-height: 100vh;
+  height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #0e0f1c;
+  background: #0b0c16;
   color: #e7e9f5;
-  font-family: system-ui, sans-serif;
+  font-family: system-ui, 'Segoe UI', sans-serif;
+  overflow: hidden;
 }
 
 .app__bar {
   display: flex;
   align-items: baseline;
-  gap: 12px;
-  padding: 10px 16px;
-  border-bottom: 1px solid #23263c;
+  gap: 10px;
+  padding: 7px 14px;
+  border-bottom: 1px solid #1c1f30;
+  flex-shrink: 0;
 }
-
+.app__bar strong {
+  font-size: 14px;
+  letter-spacing: 0.5px;
+}
 .app__phase {
-  font-size: 13px;
-  color: #8b90b5;
+  font-size: 12px;
+  color: #7a80a6;
 }
 
 .app__stage {
   flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
+  position: relative;
+  min-height: 0;
 }
 
 /* ── 로비 ── */
 .lobby {
-  width: min(420px, 100%);
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: min(420px, 92vw);
+  height: max-content;
   display: flex;
   flex-direction: column;
   gap: 14px;
+  padding: 24px;
 }
 .lobby__title {
   margin: 0;
@@ -64,7 +72,6 @@
   font-size: 13px;
   color: #b9bdda;
 }
-.field input[type='text'],
 .field > input {
   padding: 9px 10px;
   border-radius: 6px;
@@ -117,124 +124,166 @@
 }
 .btn--ghost {
   background: transparent;
-  align-self: flex-start;
+}
+.btn:disabled {
+  opacity: 0.45;
+  cursor: default;
 }
 
-/* ── 게임 화면 ── */
+/* ── 게임: 캔버스가 화면을 꽉 채움 ── */
 .screen {
-  display: flex;
-  gap: 16px;
-  align-items: flex-start;
-  width: 100%;
-  max-width: 1180px;
+  position: absolute;
+  inset: 0;
 }
-.screen__side {
-  width: 220px;
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-.panel {
-  border: 1px solid #23263c;
-  border-radius: 8px;
-  padding: 10px 12px;
-  font-size: 13px;
-  background: #12142400;
-}
-.panel__row {
-  display: flex;
-  justify-content: space-between;
-  padding: 3px 0;
-  color: #b9bdda;
-}
-.panel__row b,
-.panel__row span:last-child {
-  color: #e7e9f5;
-}
-.panel__head {
-  font-weight: 600;
-  margin-bottom: 6px;
-}
-.code {
-  letter-spacing: 3px;
-}
-.roster {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.roster li {
-  padding: 5px 8px;
-  border-radius: 5px;
-  background: #1a1c30;
-}
-.roster li.is-me {
-  background: #23325e;
-}
-.dot--joined {
-  color: #6ee787;
-}
-.dot--connecting {
-  color: #e3b341;
-}
-.dot--error {
-  color: #ff8080;
-}
-.hint {
-  font-size: 12px;
-  color: #8b90b5;
-  line-height: 1.5;
-  margin: 0;
-}
-
-@media (max-width: 760px) {
-  .screen {
-    flex-direction: column;
-  }
-  .screen__side {
-    width: 100%;
-  }
-}
-
 .game-canvas {
-  position: relative;
-  width: min(900px, 100%);
-  aspect-ratio: 4 / 3;
-  border: 1px solid #23263c;
-  border-radius: 8px;
-  overflow: hidden;
+  position: absolute;
+  inset: 0;
 }
-
-.game-canvas__host,
+.game-canvas__host {
+  position: absolute;
+  inset: 0;
+}
 .game-canvas__host canvas {
   display: block;
   width: 100% !important;
   height: 100% !important;
 }
 
-.hud {
+/* 상단 정보 바 */
+.gamebar {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 6px 12px;
+  background: rgba(8, 9, 18, 0.82);
+  border: 1px solid #2b2f4a;
+  border-radius: 999px;
+  font: 13px/1 ui-monospace, Consolas, monospace;
+  white-space: nowrap;
+  z-index: 30;
+}
+.gamebar__floor {
+  font-weight: 700;
+  color: #cfe0ff;
+}
+.gamebar__dim {
+  color: #8b90b5;
+}
+.gamebar b {
+  color: #fff;
+}
+
+.tag {
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 11px;
+}
+.tag--seeker {
+  background: #7a2230;
+  color: #ffd9d9;
+}
+.tag--hider {
+  background: #23507a;
+  color: #d9ecff;
+}
+.prox {
+  padding: 2px 7px;
+  border-radius: 999px;
+}
+.prox--safe {
+  color: #8fe6a4;
+}
+.prox--warn {
+  color: #ffd66b;
+  background: #4a3a12;
+}
+.prox--danger {
+  color: #ff9a9a;
+  background: #5a1e24;
+  animation: proxpulse 0.7s ease-in-out infinite alternate;
+}
+@keyframes proxpulse {
+  from {
+    opacity: 0.6;
+  }
+}
+
+/* 나가기 / 방 태그 */
+.leave-btn {
   position: absolute;
   top: 10px;
   left: 10px;
-  display: flex;
-  gap: 6px;
-  pointer-events: none;
-}
-
-.hud__chip {
-  font: 12px/1 ui-monospace, Consolas, monospace;
-  color: #fff;
-  background: #000000aa;
-  border-radius: 4px;
-  padding: 5px 8px;
-}
-
-.hud__chip--muted {
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid #2b2f4a;
+  background: rgba(8, 9, 18, 0.82);
   color: #b9bdda;
+  font-size: 12px;
+  cursor: pointer;
+  z-index: 30;
+}
+.roomtag {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 30;
+  font-size: 12px;
+}
+.roomtag__head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid #2b2f4a;
+  background: rgba(8, 9, 18, 0.82);
+  color: #e7e9f5;
+  cursor: pointer;
+  font: inherit;
+}
+.roomtag__code {
+  font-family: ui-monospace, Consolas, monospace;
+  font-weight: 700;
+  letter-spacing: 2px;
+}
+.roomtag__count {
+  color: #9aa0bd;
+}
+.roomtag__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #e3b341;
+}
+.roomtag__dot--joined {
+  background: #6ee787;
+}
+.roomtag__dot--error {
+  background: #ff8080;
+}
+.roomtag__list {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 6px;
+  border-radius: 8px;
+  border: 1px solid #2b2f4a;
+  background: rgba(8, 9, 18, 0.92);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.roomtag__list li {
+  padding: 4px 8px;
+  border-radius: 5px;
+  background: #191c2e;
+}
+.roomtag__list li.is-me {
+  background: #24325c;
 }
 
 /* ── 게임 오버레이 (캔버스 위) ── */
@@ -244,7 +293,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(6, 7, 16, 0.55);
+  background: rgba(6, 7, 16, 0.6);
+  z-index: 40;
 }
 .overlay__card {
   background: #14162a;
@@ -274,60 +324,173 @@
   margin-top: 14px;
 }
 
-.topbar {
+/* 시작 시네마틱 */
+.cine {
   position: absolute;
-  top: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 6px 12px;
-  background: #000000bb;
-  border-radius: 999px;
-  font: 13px/1 ui-monospace, Consolas, monospace;
-  color: #fff;
-  white-space: nowrap;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 45;
 }
-.tag {
-  padding: 3px 8px;
-  border-radius: 999px;
-  font-weight: 700;
-  font-size: 12px;
+.cine__bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 18%;
+  background: #000;
+  animation: cineBarIn 0.4s ease-out both;
 }
-.tag--seeker {
-  background: #7a2230;
-  color: #ffd9d9;
+.cine__bar--top {
+  top: 0;
 }
-.tag--hider {
-  background: #23507a;
-  color: #d9ecff;
+.cine__bar--bottom {
+  bottom: 0;
+  --from: 100%;
 }
-.prox {
-  padding: 3px 8px;
-  border-radius: 999px;
-}
-.prox--safe {
-  color: #8fe6a4;
-}
-.prox--warn {
-  color: #ffd66b;
-  background: #4a3a12;
-}
-.prox--danger {
-  color: #ff9a9a;
-  background: #5a1e24;
-  animation: proxpulse 0.7s ease-in-out infinite alternate;
-}
-@keyframes proxpulse {
+@keyframes cineBarIn {
   from {
-    opacity: 0.65;
+    transform: translateY(var(--from, -100%));
   }
-  to {
-    opacity: 1;
+}
+.cine__caption {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 20%;
+  text-align: center;
+  color: #fff;
+  font-size: 19px;
+  letter-spacing: 0.5px;
+  text-shadow: 0 2px 10px #000;
+  animation: cineCaption 0.5s ease-out both;
+}
+@keyframes cineCaption {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
   }
 }
 
+/* 술래: 눈 감음 */
+.eyes-closed {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 38%, rgba(6, 8, 20, 0.55), rgba(3, 4, 12, 0.9));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: breathe 5s ease-in-out infinite;
+  z-index: 20;
+}
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 0.93;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+.eyes-closed__inner {
+  text-align: center;
+  color: #cfd2ea;
+}
+.eyes-closed__emoji {
+  font-size: 36px;
+}
+.eyes-closed__time {
+  display: block;
+  font-size: 34px;
+  margin: 6px 0;
+  color: #fff;
+}
+
+/* 엘리베이터 */
+.elevator-btn {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 9px 18px;
+  border-radius: 999px;
+  border: 1px solid #8b93c9;
+  background: rgba(58, 63, 94, 0.92);
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+  z-index: 30;
+}
+.floor-picker {
+  display: flex;
+  gap: 8px;
+  margin: 12px 0;
+  justify-content: center;
+}
+.floor-picker .btn {
+  min-width: 70px;
+}
+
+/* 힌트 */
+.hintbar {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  z-index: 30;
+}
+.hint-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 7px 13px;
+  border-radius: 9px;
+  border: 1px solid #2f3350;
+  background: rgba(27, 30, 51, 0.92);
+  color: #e7e9f5;
+  font-size: 13px;
+  cursor: pointer;
+}
+.hint-btn small {
+  color: #ff9a9a;
+  font-size: 10px;
+}
+.hint-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.hint-result {
+  position: absolute;
+  bottom: 62px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 7px 13px;
+  border-radius: 8px;
+  background: rgba(16, 35, 58, 0.95);
+  border: 1px solid #2a5a8a;
+  color: #d9ecff;
+  font-size: 13px;
+  white-space: nowrap;
+  z-index: 30;
+}
+.evade-toast {
+  position: absolute;
+  top: 50px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: #1c4a2a;
+  border: 1px solid #3f8f5a;
+  color: #b6f2c6;
+  font-size: 13px;
+  font-weight: 700;
+  z-index: 30;
+}
+
+/* 결과 점수판 */
 .board {
   list-style: none;
   margin: 12px 0 0;
@@ -355,245 +518,92 @@
 .board__score {
   font-weight: 700;
 }
-.roster__x {
-  color: #ff8f8f;
+
+/* ── 채팅 도크 (좌하단) ── */
+.chatdock {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  width: 270px;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #2b2f4a;
+  border-radius: 10px;
+  overflow: hidden;
+  background: rgba(8, 9, 18, 0.82);
+  z-index: 30;
+}
+.chatdock--closed {
+  width: auto;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  color: #cfd2ea;
+  font-size: 13px;
+  cursor: pointer;
+}
+.chatdock__badge {
+  background: #ff5555;
+  color: #fff;
+  border-radius: 999px;
+  padding: 0 6px;
   font-size: 11px;
 }
-.hint-tip {
+.chatdock__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 10px;
   font-size: 12px;
-  color: #8b90b5;
-  line-height: 1.55;
-  margin: 0;
+  color: #9aa0bd;
+  border-bottom: 1px solid #22263c;
 }
-
-/* 엘리베이터 */
-.elevator-btn {
-  position: absolute;
-  bottom: 14px;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 8px 16px;
-  border-radius: 999px;
-  border: 1px solid #8b93c9;
-  background: #3a3f5e;
-  color: #fff;
-  font-size: 14px;
+.chatdock__head button {
+  background: none;
+  border: 0;
+  color: #9aa0bd;
   cursor: pointer;
+  font-size: 12px;
 }
-.floor-picker {
-  display: flex;
-  gap: 8px;
-  margin: 12px 0;
-  justify-content: center;
-}
-.floor-picker .btn {
-  min-width: 66px;
-}
-
-/* 힌트 */
-.hintbar {
-  position: absolute;
-  bottom: 14px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  gap: 8px;
-}
-.hint-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1px;
-  padding: 6px 12px;
-  border-radius: 8px;
-  border: 1px solid #2f3350;
-  background: #1b1e33;
-  color: #e7e9f5;
-  font-size: 13px;
-  cursor: pointer;
-}
-.hint-btn small {
-  color: #ff9a9a;
-  font-size: 10px;
-}
-.hint-btn:disabled {
-  opacity: 0.4;
-  cursor: default;
-}
-.hint-result {
-  position: absolute;
-  bottom: 58px;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 6px 12px;
-  border-radius: 8px;
-  background: #10233a;
-  border: 1px solid #2a5a8a;
-  color: #d9ecff;
-  font-size: 13px;
-  white-space: nowrap;
-}
-.evade-toast {
-  position: absolute;
-  top: 46px;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 6px 14px;
-  border-radius: 999px;
-  background: #1c4a2a;
-  border: 1px solid #3f8f5a;
-  color: #b6f2c6;
-  font-size: 13px;
-  font-weight: 700;
-}
-
-/* ── 시작 시네마틱 ── */
-.cine {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  overflow: hidden;
-}
-.cine__bar {
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 20%;
-  background: #000;
-  animation: cineBarIn 0.4s ease-out both;
-}
-.cine__bar--top {
-  top: 0;
-}
-.cine__bar--bottom {
-  bottom: 0;
-}
-@keyframes cineBarIn {
-  from {
-    transform: translateY(var(--from, -100%));
-  }
-}
-.cine__bar--bottom {
-  --from: 100%;
-}
-.cine__caption {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 22%;
-  text-align: center;
-  color: #fff;
-  font-size: 17px;
-  letter-spacing: 0.5px;
-  text-shadow: 0 2px 8px #000;
-  animation: cineCaption 0.5s ease-out both;
-}
-@keyframes cineCaption {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-}
-
-/* ── 술래: 눈 감음 ── */
-.eyes-closed {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(ellipse at center, rgba(4, 4, 12, 0.72), rgba(2, 2, 6, 0.94));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  animation: breathe 5s ease-in-out infinite;
-}
-@keyframes breathe {
-  0%,
-  100% {
-    opacity: 0.92;
-  }
-  50% {
-    opacity: 1;
-  }
-}
-.eyes-closed__inner {
-  text-align: center;
-  color: #cfd2ea;
-}
-.eyes-closed__emoji {
-  font-size: 34px;
-}
-.eyes-closed__time {
-  display: block;
-  font-size: 30px;
-  margin: 6px 0;
-  color: #fff;
-}
-
-.hiding-timer {
-  position: absolute;
-  top: 12px;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 6px 14px;
-  border-radius: 999px;
-  background: #000000bb;
-  color: #fff;
-  font: 14px/1 ui-monospace, Consolas, monospace;
-}
-
-/* ── 채팅 ── */
-.chat {
-  display: flex;
-  flex-direction: column;
-  border: 1px solid #23263c;
-  border-radius: 8px;
-  overflow: hidden;
-  flex: 1;
-  min-height: 150px;
-}
-.chat__log {
-  flex: 1;
+.chatdock__log {
+  max-height: 170px;
   overflow-y: auto;
-  padding: 8px;
+  padding: 7px 9px;
   display: flex;
   flex-direction: column;
   gap: 3px;
-  max-height: 240px;
 }
-.chat__empty {
-  color: #6b7096;
-  font-size: 12px;
-  margin: 0;
-}
-.chat__line {
+.chatdock__line {
   margin: 0;
   font-size: 12.5px;
   line-height: 1.4;
   color: #d4d7ee;
   word-break: break-word;
 }
-.chat__line b {
+.chatdock__line b {
   color: #9fb4ff;
 }
-.chat__line.is-me b {
+.chatdock__line.is-me b {
   color: #6ee787;
 }
-.chat__form {
+.chatdock__form {
   display: flex;
-  border-top: 1px solid #23263c;
+  border-top: 1px solid #22263c;
 }
-.chat__form input {
+.chatdock__form input {
   flex: 1;
   border: 0;
-  background: #14162a;
+  background: rgba(20, 22, 42, 0.6);
   color: #e7e9f5;
   padding: 8px 10px;
   font-size: 13px;
   outline: none;
 }
-.chat__form button {
+.chatdock__form button {
   border: 0;
   background: #3d6bff;
   color: #fff;
-  padding: 0 14px;
+  padding: 0 13px;
   cursor: pointer;
 }

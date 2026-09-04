@@ -110,9 +110,39 @@ export function GameHud(props: Props) {
 
   return (
     <>
-      <div className="hud">
-        <span className="hud__chip">{floorName || '…'}</span>
-        <span className="hud__chip hud__chip--muted">방향키 / WASD</span>
+      {/* 상단 정보 바 */}
+      <div className="gamebar">
+        <span className="gamebar__floor">{floorName || '…'}</span>
+        {role && state.phase !== 'WAITING' && (
+          <span className={`tag ${role === 'SEEKER' ? 'tag--seeker' : 'tag--hider'}`}>
+            {role === 'SEEKER' ? '술래' : '도망자'}
+          </span>
+        )}
+        {state.phase === 'WAITING' && <span className="gamebar__dim">대기 중</span>}
+        {state.phase === 'HIDING' && (
+          <span>
+            숨는 시간 <b>{clock((state.hidingEndsAt ?? now) - now)}</b>
+          </span>
+        )}
+        {state.phase === 'PLAYING' && (
+          <>
+            <span>
+              남은 <b>{clock((state.chasingEndsAt ?? now) - now)}</b>
+            </span>
+            <span>
+              생존 {GameRules.aliveCount(state)}/{GameRules.hiderCount(state)}
+            </span>
+            {proximity.kind !== 'none' && (
+              <span className={`prox prox--${PROX[proximity.level].cls}`}>
+                {PROX[proximity.level].dot}{' '}
+                {proximity.kind === 'reaction'
+                  ? `반응 ${PROX[proximity.level].text}`
+                  : PROX[proximity.level].text}
+              </span>
+            )}
+          </>
+        )}
+        {state.phase === 'FINISHED' && <span className="gamebar__dim">게임 종료</span>}
       </div>
 
       {/* 엘리베이터 */}
@@ -186,30 +216,8 @@ export function GameHud(props: Props) {
         </div>
       )}
 
-      {state.phase === 'HIDING' && !introActive && role !== 'SEEKER' && (
-        <div className="hiding-timer">
-          숨는 시간 <b>{clock((state.hidingEndsAt ?? now) - now)}</b>
-        </div>
-      )}
-
       {state.phase === 'PLAYING' && (
         <>
-          <div className="topbar">
-            <span className={`tag ${role === 'SEEKER' ? 'tag--seeker' : 'tag--hider'}`}>
-              {role === 'SEEKER' ? '술래' : role === 'HIDER' ? '도망자' : '관전'}
-            </span>
-            <span>남은 시간 {clock((state.chasingEndsAt ?? now) - now)}</span>
-            <span>
-              생존 {GameRules.aliveCount(state)} / {GameRules.hiderCount(state)}
-            </span>
-            {proximity.kind !== 'none' && (
-              <span className={`prox prox--${PROX[proximity.level].cls}`}>
-                {PROX[proximity.level].dot}{' '}
-                {proximity.kind === 'reaction' ? `반응 ${PROX[proximity.level].text}` : PROX[proximity.level].text}
-              </span>
-            )}
-          </div>
-
           {role === 'SEEKER' && (
             <div className="hintbar">
               {(['floor', 'direction', 'distance'] as HintKind[]).map((k) => {

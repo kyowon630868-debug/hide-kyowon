@@ -1,6 +1,5 @@
 import Phaser from 'phaser';
-import { VIEW } from './constants';
-import { BootScene } from './scenes/BootScene';
+import { PreloadScene } from './scenes/PreloadScene';
 import { WorldScene } from './scenes/WorldScene';
 import type { Room } from '../net/Room';
 import type { GameSync } from '../net/GameSync';
@@ -14,19 +13,19 @@ export function createGame(
   const game = new Phaser.Game({
     type: Phaser.AUTO,
     parent,
-    width: VIEW.WIDTH,
-    height: VIEW.HEIGHT,
     pixelArt: true,
-    backgroundColor: '#0e0f1c',
+    backgroundColor: '#0b0c16',
     physics: {
       default: 'arcade',
       arcade: { debug: false },
     },
     scale: {
-      mode: Phaser.Scale.FIT,
-      autoCenter: Phaser.Scale.CENTER_BOTH,
+      // 부모 div 크기에 맞춰 캔버스가 꽉 차게 (레터박스 없음)
+      mode: Phaser.Scale.RESIZE,
+      width: '100%',
+      height: '100%',
     },
-    scene: [BootScene, WorldScene],
+    scene: [PreloadScene, WorldScene],
   });
 
   // 씬에서 this.registry.get(...) 으로 접근

@@ -1,6 +1,8 @@
 import Phaser from 'phaser';
 import { PLAYER_SPEED } from '../constants';
 import type { Direction, LocalSnapshot } from '../../types/game';
+import { CHAR_SHEET } from '../assets';
+import { applyCharAnim } from './playerAnim';
 
 /**
  * 내가 조종하는 캐릭터.
@@ -11,18 +13,17 @@ export class LocalPlayer extends Phaser.Physics.Arcade.Sprite {
   private cursors: Phaser.Types.Input.Keyboard.CursorKeys;
   private facing: Direction = 'down';
   private movingNow = false;
-  private bob = 0;
   private controlEnabled = true;
   readonly label: Phaser.GameObjects.Text;
 
   constructor(scene: Phaser.Scene, x: number, y: number, nickname: string) {
-    super(scene, x, y, 'player-down');
+    super(scene, x, y, CHAR_SHEET, 0);
     scene.add.existing(this);
     scene.physics.add.existing(this);
 
-    // 충돌 박스는 발밑 작은 영역만 (머리는 벽에 겹쳐도 됨)
-    this.setSize(14, 10);
-    this.setOffset(5, 16);
+    // 충돌 박스는 발밑만 (24x32 프레임 기준)
+    this.setSize(12, 9);
+    this.setOffset(6, 21);
     this.setCollideWorldBounds(true);
     this.setDepth(10);
 
@@ -50,7 +51,8 @@ export class LocalPlayer extends Phaser.Physics.Arcade.Sprite {
   /** 연출용 — 방향을 강제로 지정 (스냅샷에도 반영되어 다른 화면에서도 같은 방향으로 보임) */
   forceFacing(dir: Direction) {
     this.facing = dir;
-    this.applyFacingTexture();
+    this.movingNow = false;
+    applyCharAnim(this, dir, false);
   }
 
   preUpdate(time: number, delta: number) {
@@ -59,7 +61,7 @@ export class LocalPlayer extends Phaser.Physics.Arcade.Sprite {
     if (!this.controlEnabled) {
       this.setVelocity(0, 0);
       this.movingNow = false;
-      this.setScale(1, 1);
+      applyCharAnim(this, this.facing, false);
       this.label.setPosition(this.x, this.y - 20);
       return;
     }
@@ -82,15 +84,8 @@ export class LocalPlayer extends Phaser.Physics.Arcade.Sprite {
       // 좌우 우선, 그다음 상하로 방향 결정
       if (Math.abs(vx) > Math.abs(vy)) this.facing = vx > 0 ? 'right' : 'left';
       else this.facing = vy > 0 ? 'down' : 'up';
-      this.applyFacingTexture();
-
-      // 걷는 느낌의 가벼운 스쿼시 (순수 시각 효과)
-      this.bob += delta * 0.02;
-      this.setScale(1, 1 + Math.sin(this.bob) * 0.05);
-    } else {
-      this.bob = 0;
-      this.setScale(1, 1);
     }
+    applyCharAnim(this, this.facing, moving);
 
     this.label.setPosition(this.x, this.y - 20);
   }
@@ -103,23 +98,6 @@ export class LocalPlayer extends Phaser.Physics.Arcade.Sprite {
       dir: this.facing,
       moving: this.movingNow,
     };
-  }
-
-  private applyFacingTexture() {
-    switch (this.facing) {
-      case 'down':
-        this.setTexture('player-down').setFlipX(false);
-        break;
-      case 'up':
-        this.setTexture('player-up').setFlipX(false);
-        break;
-      case 'left':
-        this.setTexture('player-side').setFlipX(true);
-        break;
-      case 'right':
-        this.setTexture('player-side').setFlipX(false);
-        break;
-    }
   }
 
   destroy(fromScene?: boolean) {

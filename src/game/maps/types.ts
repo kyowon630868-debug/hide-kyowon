@@ -2,12 +2,21 @@
 export type FloorId = 1 | 3 | 5;
 
 /** 타일 문자 의미
- *  '#' 벽 (충돌)
- *  '.' 바닥 (이동 가능)
- *  'D' 문/출입구 (이동 가능, 시각적 강조)
- *  'E' 엘리베이터 (이동 가능, Phase 7에서 상호작용)
+ *  '#' 벽 · 'h' 낮은 칸막이(둘 다 충돌)
+ *  '.' 사무실 · ',' 복도 · '=' 회의실 · '~' 화장실 · '%' 탕비실 (이동 가능)
+ *  'D' 문 · 'E' 엘리베이터 (이동 가능)
  */
-export type TileChar = '#' | '.' | 'D' | 'E';
+export type TileChar = '#' | 'h' | '.' | ',' | '=' | '~' | '%' | 'D' | 'E';
+
+/** 맵에 배치하는 가구/소품 */
+export interface Prop {
+  /** 에셋 키 (FURNITURE_KEYS 중 하나) */
+  kind: string;
+  col: number;
+  row: number;
+  /** 충돌체로도 쓸지 */
+  solid?: boolean;
+}
 
 export interface FloorMap {
   id: FloorId;
@@ -21,10 +30,12 @@ export interface FloorMap {
   elevator: { col: number; row: number };
   /** 게임 시작 시 플레이어를 흩어놓을 후보 타일들 (없으면 spawn 사용) */
   spawnPoints?: Array<{ col: number; row: number }>;
-  /** 바닥 색조 (층마다 다르게 보이도록). 미지정 시 기본색 */
+  /** 바닥 색조 (예전 방식, 단색 층 1·5에서만 사용) */
   floorTint?: number;
   /** 창문 (남산 야경). 벽 위에 장식으로 얹는다 — 충돌 없음 */
   windows?: Array<{ col: number; row: number; tilesWide: number }>;
+  /** 가구/소품 */
+  props?: Prop[];
 }
 
 export const isWall = (ch: string) => ch === '#';
