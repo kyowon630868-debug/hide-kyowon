@@ -1,5 +1,12 @@
-import { CATCH_DISTANCE_TILES, GAME_TIMING, TILE_SIZE } from '../game/constants';
-import type { GamePhase, GameState, PlayerPos, Role } from './types';
+import {
+  CATCH_DISTANCE_TILES,
+  EVADE_BONUS,
+  GAME_TIMING,
+  HINT_FAR_TILES,
+  HINT_NEAR_TILES,
+  TILE_SIZE,
+} from '../game/constants';
+import type { GamePhase, GameState, HintKind, HintResult, PlayerPos, Role } from './types';
 
 /**
  * GameRules — 순수 함수 모음. 시간·좌표를 받아 다음 상태를 계산할 뿐,
@@ -9,6 +16,8 @@ import type { GamePhase, GameState, PlayerPos, Role } from './types';
 const SURVIVE_POINT_PER_10S = 5;
 const FINAL_SURVIVE_BONUS = 200;
 const FOUND_POINT = 100;
+
+const COMPASS = ['북', '북동', '동', '남동', '남', '남서', '서', '북서'];
 
 function pickRandom<T>(list: T[]): T {
   return list[Math.floor(Math.random() * list.length)];
@@ -26,6 +35,8 @@ export const GameRules = {
       endedAt: null,
       caughtAt: {},
       spawns: {},
+      hintSpent: {},
+      evadeCount: {},
       winner: null,
       rev: 0,
     };
@@ -135,6 +146,77 @@ export const GameRules = {
     return { ...this.initial(), rev: state.rev + 1 };
   },
 
+  /** 술래가 힌트를 사용 → 점수 차감 기록 (심판이 호출) */
+  chargeHint(state: GameState, seekerId: string, cost: number): GameState {
+    if (state.phase !== 'PLAYING' || state.seekerId !== seekerId) return state;
+    return {
+      ...state,
+      hintSpent: { ...state.hintSpent, [seekerId]: (state.hintSpent[seekerId] ?? 0) + cost },
+      rev: state.rev + 1,
+    };
+  },
+
+  /** 도망자 회피 성공 1회 추가 (심판이 호출) */
+  addEvade(state: GameState, hiderId: string): GameState {
+    if (state.phase !== 'PLAYING' || !state.alive[hiderId]) return state;
+    return {
+      ...state,
+      evadeCount: { ...state.evadeCount, [hiderId]: (state.evadeCount[hiderId] ?? 0) + 1 },
+      rev: state.rev + 1,
+    };
+  },
+
+  /**
+   * 힌트 계산 — 순수. 술래 클라이언트가 자기 위치 정보로 즉시 계산해서 보여준다.
+   * 정확한 좌표·거리는 절대 반환하지 않는다.
+   */
+  computeHint(
+    kind: HintKind,
+    state: GameState,
+    positions: Record<string, PlayerPos>,
+  ): HintResult {
+    const seeker = state.seekerId ? positions[state.seekerId] : undefined;
+    const aliveHiders = Object.keys(state.alive).filter((id) => state.alive[id]);
+    const hiderPos = aliveHiders
+      .map((id) => positions[id])
+      .filter((p): p is PlayerPos => !!p);
+
+    if (kind === 'floor') {
+      const floors = [...new Set(hiderPos.map((p) => p.floor))].sort((a, b) => a - b);
+      return { kind: 'floor', floors };
+    }
+
+    if (!seeker || hiderPos.length === 0) return { kind: 'none' };
+
+    // 같은 층 도망자 우선, 없으면 전체에서 가장 가까운 사람
+    const sameFloor = hiderPos.filter((p) => p.floor === seeker.floor);
+    const pool = sameFloor.length > 0 ? sameFloor : hiderPos;
+    let nearest = pool[0];
+    let best = Infinity;
+    for (const p of pool) {
+      const d = Math.hypot(p.x - seeker.x, p.y - seeker.y);
+      if (d < best) {
+        best = d;
+        nearest = p;
+      }
+    }
+    const onSameFloor = nearest.floor === seeker.floor;
+
+    if (kind === 'direction') {
+      // atan2: 동=0, 남=+90, 서=180, 북=-90 (화면 y는 아래로 증가)
+      const deg = (Math.atan2(nearest.y - seeker.y, nearest.x - seeker.x) * 180) / Math.PI;
+      // 북 기준 시계방향 8방위 인덱스: 북=0, 동=2, 남=4, 서=6
+      const idx = ((Math.round(deg / 45) + 10) % 8);
+      return { kind: 'direction', dir: COMPASS[idx], sameFloor: onSameFloor };
+    }
+
+    // distance
+    if (!onSameFloor) return { kind: 'distance', band: '멀다', sameFloor: false };
+    const tiles = best / TILE_SIZE;
+    const band = tiles <= HINT_NEAR_TILES ? '가깝다' : tiles <= HINT_FAR_TILES ? '보통' : '멀다';
+    return { kind: 'distance', band, sameFloor: true };
+  },
+
   // ── 조회 헬퍼 ──────────────────────────────────────────────
 
   roleOf(state: GameState, id: string): Role | null {
@@ -172,12 +254,14 @@ export const GameRules = {
       const survivedSec = Math.max(0, (end - startedAt) / 1000);
       let score = Math.floor(survivedSec / 10) * SURVIVE_POINT_PER_10S;
       if (state.phase === 'FINISHED' && !caughtAt) score += FINAL_SURVIVE_BONUS;
+      score += (state.evadeCount[id] ?? 0) * EVADE_BONUS;
       return { id, role: 'HIDER' as Role, score, survivedSec };
     });
 
     if (state.seekerId) {
       const found = Object.keys(state.caughtAt).length;
-      rows.push({ id: state.seekerId, role: 'SEEKER', score: found * FOUND_POINT, survivedSec: 0 });
+      const score = found * FOUND_POINT - (state.hintSpent[state.seekerId] ?? 0);
+      rows.push({ id: state.seekerId, role: 'SEEKER', score, survivedSec: 0 });
     }
 
     return rows.sort((a, b) => b.score - a.score);

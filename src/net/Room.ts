@@ -9,7 +9,7 @@ const SEND_INTERVAL_MS = 100; // 위치 브로드캐스트 주기 (10Hz)
 
 /** 방 안에서 오가는 메시지 봉투. Room 은 종류만 구분하고 내용(body)은 해석하지 않는다. */
 interface Envelope {
-  k: 'move' | 'game';
+  k: 'move' | 'game' | 'action';
   body: unknown;
 }
 
@@ -20,6 +20,8 @@ type RoomEvents = {
   snapshot: (s: PlayerSnapshot) => void;
   /** 게임 상태 브로드캐스트 (내용 해석은 GameSync 담당) */
   game: (fromId: string, body: unknown) => void;
+  /** 클라이언트 → 심판 의도 전달 (힌트 사용 등). 심판만 처리 */
+  action: (fromId: string, body: unknown) => void;
   peerLeave: (id: string) => void;
 };
 
@@ -40,6 +42,7 @@ export class Room {
     status: new Set(),
     snapshot: new Set(),
     game: new Set(),
+    action: new Set(),
     peerLeave: new Set(),
   };
 
@@ -105,6 +108,11 @@ export class Room {
     this.transport.send({ k: 'game', body } satisfies Envelope);
   }
 
+  /** 심판에게 의도 전달 (누구나 호출) */
+  sendAction(body: unknown): void {
+    this.transport.send({ k: 'action', body } satisfies Envelope);
+  }
+
   async leave(): Promise<void> {
     await this.transport.leave();
     this.roster.clear();
@@ -116,12 +124,17 @@ export class Room {
 
   private handleMessage(fromId: string, data: unknown) {
     const env = data as Partial<Envelope> | null;
-    if (!env || (env.k !== 'move' && env.k !== 'game')) return;
+    if (!env) return;
 
     if (env.k === 'game') {
       this.emit('game', fromId, env.body);
       return;
     }
+    if (env.k === 'action') {
+      this.emit('action', fromId, env.body);
+      return;
+    }
+    if (env.k !== 'move') return;
 
     const snap = env.body as LocalSnapshot;
     if (!snap || typeof snap.x !== 'number') return;

@@ -26,6 +26,10 @@ export interface GameState {
   caughtAt: Record<string, number>;
   /** 시작 시 배정된 스폰 자리 번호 (맵의 spawnPoints 인덱스로 사용) */
   spawns: Record<string, number>;
+  /** 술래가 힌트로 쓴 누적 점수 (seekerId → 차감액) */
+  hintSpent: Record<string, number>;
+  /** 도망자별 회피 성공 횟수 */
+  evadeCount: Record<string, number>;
   winner: Winner;
   /** 상태 리비전 — 오래 도착한 브로드캐스트를 무시하는 용도 */
   rev: number;
@@ -39,3 +43,12 @@ export interface PlayerPos {
   y: number;
   floor: number;
 }
+
+export type HintKind = 'floor' | 'direction' | 'distance';
+
+/** 술래가 힌트를 눌렀을 때 계산되는 결과 (정확한 위치는 절대 포함 안 함) */
+export type HintResult =
+  | { kind: 'floor'; floors: number[] }
+  | { kind: 'direction'; dir: string; sameFloor: boolean }
+  | { kind: 'distance'; band: '멀다' | '보통' | '가깝다'; sameFloor: boolean }
+  | { kind: 'none' };

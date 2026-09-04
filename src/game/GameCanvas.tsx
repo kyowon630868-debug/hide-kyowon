@@ -1,43 +1,40 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import type Phaser from 'phaser';
 import { createGame } from './createGame';
 import type { Room } from '../net/Room';
 import type { GameSync } from '../net/GameSync';
-import type { Proximity } from '../types/game';
 
-interface HudState {
-  floorName: string;
-}
+/** 씬이 game.events 로 올려보내는 이벤트 이름들 */
+const FORWARD = ['hud', 'proximity', 'elevator', 'elevator-travel', 'hintResult', 'api'] as const;
+export type CanvasEvent = (typeof FORWARD)[number];
 
 /**
- * Phaser 캔버스 + 그 위에 겹치는 React 오버레이(children).
- * React 는 UI 를, Phaser 는 게임 화면을 담당하고 둘은 game.events / registry 로만 만난다.
+ * Phaser 캔버스. 씬에서 올라오는 이벤트를 전부 onEvent 로 부모에게 넘기고,
+ * 오버레이 UI(children)는 부모가 그린다.
  */
 export function GameCanvas({
   room,
   sync,
-  onProximity,
+  onEvent,
   children,
 }: {
   room: Room | null;
   sync: GameSync | null;
-  onProximity?: (p: Proximity) => void;
+  onEvent?: (name: CanvasEvent, payload: unknown) => void;
   children?: ReactNode;
 }) {
   const hostRef = useRef<HTMLDivElement>(null);
-  const [hud, setHud] = useState<HudState>({ floorName: '' });
-  const proxRef = useRef(onProximity);
-  proxRef.current = onProximity;
+  const onEventRef = useRef(onEvent);
+  onEventRef.current = onEvent;
 
   useEffect(() => {
     const host = hostRef.current;
     if (!host || !room || !sync) return;
 
     const game = createGame(host, room, sync);
-    game.events.on('hud', (next: Partial<HudState>) =>
-      setHud((prev) => ({ ...prev, ...next })),
-    );
-    game.events.on('proximity', (p: Proximity) => proxRef.current?.(p));
+    for (const name of FORWARD) {
+      game.events.on(name, (p: unknown) => onEventRef.current?.(name, p));
+    }
 
     if (import.meta.env.DEV) {
       (window as unknown as { game: Phaser.Game }).game = game;
@@ -51,10 +48,6 @@ export function GameCanvas({
   return (
     <div className="game-canvas">
       <div ref={hostRef} className="game-canvas__host" />
-      <div className="hud">
-        <span className="hud__chip">{hud.floorName || '…'}</span>
-        <span className="hud__chip hud__chip--muted">방향키 / WASD</span>
-      </div>
       {children}
     </div>
   );

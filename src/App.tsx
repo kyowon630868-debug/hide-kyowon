@@ -11,7 +11,7 @@ export default function App() {
     <div className="app">
       <header className="app__bar">
         <strong>HIDE @ KYOWON</strong>
-        <span className="app__phase">Phase 3 — 술래잡기</span>
+        <span className="app__phase">Phase 4 — 힌트 · 엘리베이터 · 층 이동</span>
       </header>
       <main className="app__stage">
         {session ? (

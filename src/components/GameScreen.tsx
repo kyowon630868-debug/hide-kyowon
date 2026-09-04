@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useRoom } from '../hooks/useRoom';
 import { useGame } from '../hooks/useGame';
-import { GameCanvas } from '../game/GameCanvas';
-import { GameOverlay } from './GameOverlay';
+import { GameCanvas, type CanvasEvent } from '../game/GameCanvas';
+import { GameHud, type HudApi } from './GameHud';
 import { GameRules } from '../game-logic/rules';
+import type { HintResult } from '../game-logic/types';
 import type { Proximity, RoomOptions } from '../types/game';
 import type { ConnStatus } from '../net/transport';
 
@@ -22,10 +23,42 @@ export function GameScreen({
 }) {
   const { room, roster, status } = useRoom(options);
   const { sync, state } = useGame(room, options.isHost);
+
+  const [floorName, setFloorName] = useState('');
+  const [floorId, setFloorId] = useState(3);
   const [proximity, setProximity] = useState<Proximity>({ level: 0, kind: 'none' });
+  const [elevatorNear, setElevatorNear] = useState(false);
+  const [traveling, setTraveling] = useState<{ to: number } | null>(null);
+  const [hint, setHint] = useState<{ result: HintResult; cooldownUntil: number } | null>(null);
+  const [api, setApi] = useState<HudApi | null>(null);
 
   const selfId = room?.selfId ?? '';
-  const phaseLabel = GameRules.label(state.phase);
+
+  function handleEvent(name: CanvasEvent, payload: unknown) {
+    switch (name) {
+      case 'hud': {
+        const p = payload as { floorName?: string; floorId?: number };
+        setFloorName(p.floorName ?? '');
+        if (p.floorId) setFloorId(p.floorId);
+        break;
+      }
+      case 'proximity':
+        setProximity(payload as Proximity);
+        break;
+      case 'elevator':
+        setElevatorNear((payload as { near: boolean }).near);
+        break;
+      case 'elevator-travel':
+        setTraveling(payload as { to: number } | null);
+        break;
+      case 'hintResult':
+        setHint(payload as { result: HintResult; cooldownUntil: number });
+        break;
+      case 'api':
+        setApi(payload as HudApi);
+        break;
+    }
+  }
 
   return (
     <div className="screen">
@@ -49,7 +82,10 @@ export function GameScreen({
           </div>
           <div className="panel__row">
             <span>게임</span>
-            <span>{phaseLabel}{options.isHost ? ' · 방장' : ''}</span>
+            <span>
+              {GameRules.label(state.phase)}
+              {options.isHost ? ' · 방장' : ''}
+            </span>
           </div>
         </div>
 
@@ -69,19 +105,25 @@ export function GameScreen({
           </ul>
         </div>
 
-        <p className="hint">
-          같은 방 코드로 두 번째 창을 열고 방장이 <b>게임 시작</b>을 누르면
-          술래잡기가 시작됩니다.
+        <p className="hint-tip">
+          엘리베이터로 다른 층 이동 · 술래는 힌트 사용(점수 소모) · 도망자는 술래를
+          따돌리면 보너스
         </p>
       </aside>
 
-      <GameCanvas room={room} sync={sync} onProximity={setProximity}>
-        <GameOverlay
+      <GameCanvas room={room} sync={sync} onEvent={handleEvent}>
+        <GameHud
           state={state}
-          proximity={proximity}
           roster={roster}
           selfId={selfId}
           isHost={options.isHost}
+          floorName={floorName}
+          floorId={floorId}
+          proximity={proximity}
+          elevatorNear={elevatorNear}
+          traveling={traveling}
+          hint={hint}
+          api={api}
           onStart={() => sync?.startGame(roster.map((r) => r.id))}
           onRestart={() => sync?.restart()}
         />

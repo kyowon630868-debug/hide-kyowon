@@ -17,8 +17,12 @@ export interface FloorMap {
   rows: string[];
   /** 이 층에 처음 들어올 때 서는 타일 좌표 (열, 행) */
   spawn: { col: number; row: number };
+  /** 엘리베이터에서 내렸을 때 서는 타일 (열, 행) */
+  elevator: { col: number; row: number };
   /** 게임 시작 시 플레이어를 흩어놓을 후보 타일들 (없으면 spawn 사용) */
   spawnPoints?: Array<{ col: number; row: number }>;
+  /** 바닥 색조 (층마다 다르게 보이도록). 미지정 시 기본색 */
+  floorTint?: number;
 }
 
 export const isWall = (ch: string) => ch === '#';
@@ -36,5 +40,12 @@ export function assertFloorMap(floor: FloorMap): void {
   const spawnCh = floor.rows[floor.spawn.row]?.[floor.spawn.col];
   if (spawnCh === undefined || spawnCh === '#') {
     throw new Error(`[${floor.name}] 스폰 지점(${floor.spawn.col},${floor.spawn.row})이 벽이거나 범위 밖`);
+  }
+  const elevCh = floor.rows[floor.elevator.row]?.[floor.elevator.col];
+  if (elevCh === undefined || elevCh === '#') {
+    throw new Error(`[${floor.name}] 엘리베이터 도착 지점(${floor.elevator.col},${floor.elevator.row})이 벽이거나 범위 밖`);
+  }
+  if (!floor.rows.some((r) => r.includes('E'))) {
+    throw new Error(`[${floor.name}] 엘리베이터 타일(E) 이 없음`);
   }
 }

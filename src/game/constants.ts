@@ -15,8 +15,28 @@ export const GAME_TIMING = {
   CHASING_SECONDS: 180,
 } as const;
 
-/** 잡기 판정 거리 (타일 단위) — Phase 6에서 사용 */
+/** 잡기 판정 거리 (타일 단위) */
 export const CATCH_DISTANCE_TILES = 1;
+
+/** 술래 힌트 1회 사용 시 점수 차감 */
+export const HINT_COST = 20;
+/** 힌트 재사용 대기 (ms) */
+export const HINT_COOLDOWN_MS = 4000;
+
+/** 도망자 회피 성공 보너스 */
+export const EVADE_BONUS = 50;
+/** 회피 판정: 위험 거리(칸) 안에 들어왔다가 안전 거리(칸) 밖으로 벗어나면 성공 */
+export const EVADE_DANGER_TILES = 3;
+export const EVADE_SAFE_TILES = 8;
+
+/** 거리 힌트 구간 (칸) */
+export const HINT_NEAR_TILES = 5;
+export const HINT_FAR_TILES = 12;
+
+/** 엘리베이터 상호작용 가능 거리 (px) */
+export const ELEVATOR_REACH = 60;
+/** 엘리베이터 이동 연출 시간 (ms) */
+export const ELEVATOR_TRAVEL_MS = 900;
 
 /** 네트워크 설정 — Phase 3에서 사용 */
 export const NET = {

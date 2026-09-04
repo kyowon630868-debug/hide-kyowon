@@ -1,13 +1,19 @@
 import Phaser from 'phaser';
-import { TILE_SIZE } from '../constants';
+import {
+  ELEVATOR_REACH,
+  ELEVATOR_TRAVEL_MS,
+  HINT_COOLDOWN_MS,
+  TILE_SIZE,
+} from '../constants';
 import { FLOOR_3 } from '../maps/floor3';
+import { getFloor } from '../maps';
 import { assertFloorMap, type FloorMap } from '../maps/types';
 import { LocalPlayer } from '../entities/LocalPlayer';
 import { RemotePlayer } from '../entities/RemotePlayer';
 import type { Room } from '../../net/Room';
 import type { GameSync } from '../../net/GameSync';
 import { GameRules } from '../../game-logic/rules';
-import type { GameState, PlayerPos } from '../../game-logic/types';
+import type { GameState, HintKind, PlayerPos } from '../../game-logic/types';
 import type { PlayerSnapshot } from '../../types/game';
 
 const SEEKER_TINT = 0xff6b6b;
@@ -15,25 +21,30 @@ const CAUGHT_TINT = 0x8a8a8a;
 const NEUTRAL_TINT = 0xffffff;
 
 /**
- * WorldScene — 한 층을 그리고, 내 캐릭터를 움직이고, 다른 플레이어를 보여주고,
- * 게임 규칙(GameSync)에 필요한 위치를 매 프레임 넘긴다.
+ * WorldScene — 층 하나를 그리고, 내 캐릭터를 움직이고, 다른 플레이어를 보여주고,
+ * 게임 규칙(GameSync)에 위치를 넘기고, 엘리베이터·힌트 요청을 처리한다.
+ * 층 전환은 씬을 새로 만들지 않고 타일맵만 교체한다.
  */
 export class WorldScene extends Phaser.Scene {
   private player!: LocalPlayer;
   private walls!: Phaser.Physics.Arcade.StaticGroup;
+  private tileLayer!: Phaser.GameObjects.Group;
   private floor: FloorMap = FLOOR_3;
+  private elevatorTiles: Array<{ x: number; y: number }> = [];
 
   private room: Room | null = null;
   private sync: GameSync | null = null;
 
   private remotes = new Map<string, RemotePlayer>();
-  /** 게임 규칙에 넘길 "모든" 플레이어의 최신 위치 (렌더링과 분리) */
   private netPositions = new Map<string, PlayerPos>();
   private unsubscribes: Array<() => void> = [];
 
   private lastProximity = -1;
   private lastShakeAt = 0;
   private lastPhase = '';
+  private nearElevator = false;
+  private traveling = false;
+  private lastHintAt = 0;
 
   constructor() {
     super('world');
@@ -46,36 +57,33 @@ export class WorldScene extends Phaser.Scene {
     this.sync = (this.registry.get('gameSync') as GameSync | null) ?? null;
     const myName = this.room?.selfName ?? '나';
 
+    this.tileLayer = this.add.group();
+    this.walls = this.physics.add.staticGroup();
     this.buildFloor(this.floor);
 
     const spawn = this.pickSpawn();
     this.player = new LocalPlayer(this, spawn.x, spawn.y, myName);
     this.physics.add.collider(this.player, this.walls);
 
-    const worldW = this.floor.rows[0].length * TILE_SIZE;
-    const worldH = this.floor.rows.length * TILE_SIZE;
-    this.physics.world.setBounds(0, 0, worldW, worldH);
-
-    const cam = this.cameras.main;
-    cam.setBounds(0, 0, worldW, worldH);
-    cam.startFollow(this.player, true, 0.15, 0.15);
-    cam.setZoom(1.7);
-
-    this.game.events.emit('hud', { floorName: this.floor.name });
+    this.cameras.main.startFollow(this.player, true, 0.15, 0.15);
+    this.cameras.main.setZoom(1.7);
+    this.applyBounds();
 
     this.connectRoom();
+    this.emitHud();
     if (this.sync) this.applyGameState(this.sync.getState());
+
+    // React → 씬 명령 통로
+    this.game.events.emit('api', {
+      travelTo: (floorId: number) => this.travelTo(floorId),
+      requestHint: (kind: HintKind) => this.requestHint(kind),
+    });
   }
 
   update() {
-    // React HUD 가 첫 emit 을 놓쳤을 경우 대비해 초반 몇 프레임 재전송
-    if (this.game.loop.frame < 12) {
-      this.game.events.emit('hud', { floorName: this.floor.name });
-    }
-
+    if (this.game.loop.frame < 12) this.emitHud();
     if (!this.room || !this.sync) return;
 
-    // 1) 내 위치 브로드캐스트 + 규칙용 위치 갱신
     const mySnap = { ...this.player.snapshot(), floor: this.floor.id };
     this.room.pushLocal(mySnap);
     this.netPositions.set(this.room.selfId, {
@@ -84,11 +92,79 @@ export class WorldScene extends Phaser.Scene {
       floor: this.floor.id,
     });
 
-    // 2) 호스트라면 규칙 진행 (비호스트는 no-op)
     this.sync.frame(Object.fromEntries(this.netPositions), Date.now());
-
-    // 3) 근접 반응 계산 (각자 자기 화면에서만)
     this.updateProximity(this.sync.getState());
+    this.updateElevatorProximity();
+  }
+
+  // ── 엘리베이터 ─────────────────────────────────────────────
+
+  private updateElevatorProximity() {
+    if (this.traveling) return;
+    const near = this.elevatorTiles.some(
+      (t) => Phaser.Math.Distance.Between(t.x, t.y, this.player.x, this.player.y) <= ELEVATOR_REACH,
+    );
+    if (near !== this.nearElevator) {
+      this.nearElevator = near;
+      this.game.events.emit('elevator', { near, floorId: this.floor.id });
+    }
+  }
+
+  private travelTo(floorId: number) {
+    if (this.traveling || floorId === this.floor.id || !this.nearElevator) return;
+    if (!getFloor(floorId)) return;
+
+    this.traveling = true;
+    this.player.setControlEnabled(false);
+    (this.player.body as Phaser.Physics.Arcade.Body).setVelocity(0, 0);
+    this.game.events.emit('elevator-travel', { to: floorId });
+
+    this.cameras.main.fadeOut(200);
+    this.time.delayedCall(ELEVATOR_TRAVEL_MS, () => {
+      this.changeFloor(floorId, true);
+      this.player.setControlEnabled(true);
+      this.traveling = false;
+      this.nearElevator = false;
+      this.cameras.main.fadeIn(200);
+      this.game.events.emit('elevator-travel', null);
+      this.game.events.emit('elevator', { near: true, floorId });
+    });
+  }
+
+  private changeFloor(floorId: number, arriveAtElevator: boolean) {
+    this.floor = getFloor(floorId);
+    if (import.meta.env.DEV) assertFloorMap(this.floor);
+
+    this.buildFloor(this.floor);
+    this.applyBounds();
+
+    const target = arriveAtElevator ? this.floor.elevator : this.floor.spawn;
+    const w = this.tileToWorld(target.col, target.row);
+    (this.player.body as Phaser.Physics.Arcade.Body).reset(w.x, w.y);
+    this.cameras.main.centerOn(w.x, w.y);
+
+    // 다른 층에 있던 상대 캐릭터는 모두 제거 (같은 층이면 스냅샷으로 다시 나타남)
+    this.remotes.forEach((r) => r.destroy());
+    this.remotes.clear();
+
+    this.lastProximity = -1;
+    this.emitHud();
+  }
+
+  // ── 힌트 ───────────────────────────────────────────────────
+
+  private requestHint(kind: HintKind) {
+    if (!this.room || !this.sync) return;
+    const s = this.sync.getState();
+    if (s.phase !== 'PLAYING' || s.seekerId !== this.room.selfId) return;
+
+    const now = Date.now();
+    if (now - this.lastHintAt < HINT_COOLDOWN_MS) return;
+    this.lastHintAt = now;
+
+    const result = GameRules.computeHint(kind, s, Object.fromEntries(this.netPositions));
+    this.game.events.emit('hintResult', { result, cooldownUntil: now + HINT_COOLDOWN_MS });
+    this.sync.reportHintUsed(kind);
   }
 
   // ── 게임 상태 반영 ─────────────────────────────────────────
@@ -97,7 +173,6 @@ export class WorldScene extends Phaser.Scene {
     const myId = this.room?.selfId ?? '';
     const myRole = GameRules.roleOf(s, myId);
 
-    // HIDING 진입 순간: 배정된 스폰 자리로 순간이동 (시작 시 겹침 방지)
     if (s.phase === 'HIDING' && this.lastPhase !== 'HIDING' && myId in s.spawns) {
       const pts = this.floor.spawnPoints ?? [this.floor.spawn];
       const pt = pts[s.spawns[myId] % pts.length];
@@ -106,23 +181,15 @@ export class WorldScene extends Phaser.Scene {
     }
     this.lastPhase = s.phase;
 
-    // 숨는 시간에는 술래 조작 잠금
     const frozen = s.phase === 'HIDING' && myRole === 'SEEKER';
-    this.player.setControlEnabled(!frozen);
+    if (!this.traveling) this.player.setControlEnabled(!frozen);
 
     this.paint(this.player, myId, s, true);
     this.remotes.forEach((rp, id) => this.paint(rp, id, s, false));
-
-    this.game.events.emit('hud', { floorName: this.floor.name });
+    this.emitHud();
   }
 
-  /** 색: 잡힘=회색+반투명 / 내가 술래=빨강 / 그 외=기본(상대 캐릭터는 정체를 숨김) */
-  private paint(
-    sprite: LocalPlayer | RemotePlayer,
-    id: string,
-    s: GameState,
-    isLocal: boolean,
-  ) {
+  private paint(sprite: LocalPlayer | RemotePlayer, id: string, s: GameState, isLocal: boolean) {
     const caught = id in s.alive && !s.alive[id];
     if (caught) {
       sprite.setTint(CAUGHT_TINT);
@@ -130,7 +197,6 @@ export class WorldScene extends Phaser.Scene {
       return;
     }
     sprite.setAlpha(1);
-    // 술래 표시는 "자기 자신에게만". 남에게는 빨갛게 보이지 않는다 → 근접 반응으로만 눈치챈다
     if (isLocal && s.seekerId === id) sprite.setTint(SEEKER_TINT);
     else sprite.setTint(NEUTRAL_TINT);
   }
@@ -144,7 +210,6 @@ export class WorldScene extends Phaser.Scene {
       const me = this.netPositions.get(myId);
 
       if (me && myId === s.seekerId) {
-        // 술래: 가장 가까운 살아있는 도망자까지 거리 → "반응"
         let min = Infinity;
         for (const hiderId of Object.keys(s.alive)) {
           if (!s.alive[hiderId]) continue;
@@ -155,7 +220,6 @@ export class WorldScene extends Phaser.Scene {
         level = GameRules.proximityLevel(min);
         kind = 'reaction';
       } else if (me && s.alive[myId]) {
-        // 도망자: 술래까지 거리 → "위험"
         const sp = this.netPositions.get(s.seekerId);
         if (sp && sp.floor === me.floor) {
           level = GameRules.proximityLevel(Math.hypot(sp.x - me.x, sp.y - me.y));
@@ -169,7 +233,6 @@ export class WorldScene extends Phaser.Scene {
       this.game.events.emit('proximity', { level, kind });
     }
 
-    // 위험(빨강) + 도망자면 화면을 살짝 흔든다
     if (kind === 'danger' && level === 2) {
       const now = this.time.now;
       if (now - this.lastShakeAt > 900) {
@@ -238,7 +301,11 @@ export class WorldScene extends Phaser.Scene {
   // ── 맵 ─────────────────────────────────────────────────────
 
   private buildFloor(floor: FloorMap) {
-    this.walls = this.physics.add.staticGroup();
+    this.tileLayer.clear(true, true);
+    this.walls.clear(true, true);
+    this.elevatorTiles = [];
+
+    const tint = floor.floorTint ?? 0xffffff;
 
     floor.rows.forEach((row, r) => {
       for (let c = 0; c < row.length; c++) {
@@ -250,11 +317,21 @@ export class WorldScene extends Phaser.Scene {
           continue;
         }
 
-        this.add.image(x, y, 'tile-floor').setDepth(0);
-        if (ch === 'D') this.add.image(x, y, 'tile-door').setDepth(1);
-        if (ch === 'E') this.add.image(x, y, 'tile-elevator').setDepth(1);
+        this.tileLayer.add(this.add.image(x, y, 'tile-floor').setDepth(0).setTint(tint));
+        if (ch === 'D') this.tileLayer.add(this.add.image(x, y, 'tile-door').setDepth(1));
+        if (ch === 'E') {
+          this.tileLayer.add(this.add.image(x, y, 'tile-elevator').setDepth(1));
+          this.elevatorTiles.push({ x, y });
+        }
       }
     });
+  }
+
+  private applyBounds() {
+    const w = this.floor.rows[0].length * TILE_SIZE;
+    const h = this.floor.rows.length * TILE_SIZE;
+    this.physics.world.setBounds(0, 0, w, h);
+    this.cameras.main.setBounds(0, 0, w, h);
   }
 
   private tileToWorld(col: number, row: number) {
@@ -264,7 +341,6 @@ export class WorldScene extends Phaser.Scene {
     };
   }
 
-  /** 내 스폰 위치 — 정렬된 접속자 명단에서 내 순번으로 후보 타일을 고르고 약간의 흔들림을 준다 */
   private pickSpawn() {
     const points = this.floor.spawnPoints ?? [this.floor.spawn];
     const ids = (this.room?.getRoster() ?? []).map((r) => r.id).sort();
@@ -275,5 +351,12 @@ export class WorldScene extends Phaser.Scene {
       x: base.x + Phaser.Math.Between(-8, 8),
       y: base.y + Phaser.Math.Between(-8, 8),
     };
+  }
+
+  private emitHud() {
+    this.game.events.emit('hud', {
+      floorName: this.floor.name,
+      floorId: this.floor.id,
+    });
   }
 }
