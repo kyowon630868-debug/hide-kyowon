@@ -27,3 +27,7 @@ dist-ssr
 .env
 .env.local
 .env.*.local
+
+# LimeZu 원본 팩 (커밋 안 함 — scripts/import-limezu.mjs 로 가져옴)
+/Modern_Interiors_Free_v2.2/
+/Modern_Interiors_Free_v2.2.zip

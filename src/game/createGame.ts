@@ -20,10 +20,12 @@ export function createGame(
       arcade: { debug: false },
     },
     scale: {
-      // 부모 div 크기에 맞춰 캔버스가 꽉 차게 (레터박스 없음)
+      // 컨테이너를 꽉 채운다. 0 크기일 때 만들면 WebGL 이 깨지므로 GameCanvas 가
+      // 크기가 잡힌 뒤에 createGame 을 호출한다.
       mode: Phaser.Scale.RESIZE,
-      width: '100%',
-      height: '100%',
+      width: 1280,
+      height: 720,
+      min: { width: 320, height: 240 },
     },
     scene: [PreloadScene, WorldScene],
   });

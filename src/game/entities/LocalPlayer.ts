@@ -21,9 +21,9 @@ export class LocalPlayer extends Phaser.Physics.Arcade.Sprite {
     scene.add.existing(this);
     scene.physics.add.existing(this);
 
-    // 충돌 박스는 발밑만 (24x32 프레임 기준)
-    this.setSize(12, 9);
-    this.setOffset(6, 21);
+    // 충돌 박스는 발밑만 (16x32 프레임 기준)
+    this.setSize(8, 6);
+    this.setOffset(4, 25);
     this.setCollideWorldBounds(true);
     this.setDepth(10);
 

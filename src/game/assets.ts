@@ -37,7 +37,7 @@ export const WINDOW_KEY = 'window-namsan';
 /** 캐릭터 스프라이트시트: 24x32 프레임 × 6
  *  0 아래-정지 · 1 아래-걷기 · 2 위-정지 · 3 위-걷기 · 4 옆-정지 · 5 옆-걷기 */
 export const CHAR_SHEET = 'chibi';
-export const CHAR_FRAME = { width: 24, height: 32 };
+export const CHAR_FRAME = { width: 16, height: 32 };
 export const CHAR_ANIMS = {
   down: { anim: 'walk-down', frames: [0, 1], idle: 0 },
   up: { anim: 'walk-up', frames: [2, 3], idle: 2 },

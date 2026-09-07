@@ -20,7 +20,7 @@ const SEEKER_TINT = 0xff6b6b;
 const CAUGHT_TINT = 0x8a8a8a;
 const NEUTRAL_TINT = 0xffffff;
 
-const PLAY_ZOOM = 2;
+const PLAY_ZOOM = 2.8;
 const INTRO_ZOOM = 1.5;
 
 /** 타일 문자 → 바닥 텍스처 */

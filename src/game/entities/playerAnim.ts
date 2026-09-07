@@ -9,7 +9,8 @@ export function applyCharAnim(
   moving: boolean,
 ): void {
   const conf = dir === 'up' ? CHAR_ANIMS.up : dir === 'down' ? CHAR_ANIMS.down : CHAR_ANIMS.side;
-  sprite.setFlipX(dir === 'left');
+  // 옆면 기본 프레임이 '왼쪽'을 보고 있으므로 오른쪽일 때 뒤집는다
+  sprite.setFlipX(dir === 'right');
   if (moving) {
     if (sprite.anims.currentAnim?.key !== conf.anim || !sprite.anims.isPlaying) {
       sprite.anims.play(conf.anim, true);

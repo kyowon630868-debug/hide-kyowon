@@ -31,17 +31,28 @@ export function GameCanvas({
     const host = hostRef.current;
     if (!host || !room || !sync) return;
 
-    const game = createGame(host, room, sync);
-    for (const name of FORWARD) {
-      game.events.on(name, (p: unknown) => onEventRef.current?.(name, p));
-    }
+    let game: Phaser.Game | null = null;
+    let raf = 0;
 
-    if (import.meta.env.DEV) {
-      (window as unknown as { game: Phaser.Game }).game = game;
-    }
+    // 컨테이너가 0 크기인 동안 Phaser 를 만들면 WebGL 프레임버퍼가 깨진다 → 크기가 잡힐 때까지 대기
+    const startWhenSized = () => {
+      if (host.clientWidth > 0 && host.clientHeight > 0) {
+        game = createGame(host, room, sync);
+        for (const name of FORWARD) {
+          game.events.on(name, (p: unknown) => onEventRef.current?.(name, p));
+        }
+        if (import.meta.env.DEV) {
+          (window as unknown as { game: Phaser.Game }).game = game;
+        }
+      } else {
+        raf = requestAnimationFrame(startWhenSized);
+      }
+    };
+    startWhenSized();
 
     return () => {
-      game.destroy(true);
+      cancelAnimationFrame(raf);
+      game?.destroy(true);
     };
   }, [room, sync]);
 
