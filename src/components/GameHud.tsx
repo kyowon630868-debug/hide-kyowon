@@ -27,6 +27,7 @@ interface Props {
   traveling: { to: number } | null;
   hint: { result: HintResult; cooldownUntil: number } | null;
   api: HudApi | null;
+  endgame: { active: boolean; seeker: boolean; dir: string };
   onStart: () => void;
   onRestart: () => void;
 }
@@ -68,7 +69,7 @@ function hintText(r: HintResult): string {
 }
 
 export function GameHud(props: Props) {
-  const { state, roster, selfId, isHost, floorName, floorId, proximity, elevatorNear, traveling, hint, api } =
+  const { state, roster, selfId, isHost, floorName, floorId, proximity, elevatorNear, traveling, hint, api, endgame } =
     props;
   const now = useNow(state.phase === 'HIDING' || state.phase === 'PLAYING');
   const role = GameRules.roleOf(state, selfId);
@@ -76,6 +77,7 @@ export function GameHud(props: Props) {
   const seekerName = state.seekerId ? nameOf(state.seekerId) : '';
 
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickIdx, setPickIdx] = useState(0);
   const [evadeToast, setEvadeToast] = useState(0);
   const [waitingDismissed, setWaitingDismissed] = useState(false);
   const prevEvade = useRef(0);
@@ -84,6 +86,46 @@ export function GameHud(props: Props) {
   useEffect(() => {
     if (state.phase === 'WAITING') setWaitingDismissed(false);
   }, [state.phase]);
+
+  // 엘리베이터: 키보드만으로 조작 (Enter/E 로 열기, ↑↓ 선택, Enter 이동, Esc 닫기)
+  const canElevator = elevatorNear && !traveling && state.phase !== 'FINISHED';
+  useEffect(() => {
+    if (!canElevator && !pickerOpen) return;
+    const first = FLOOR_ORDER.findIndex((f) => f !== floorId);
+
+    function onKey(e: KeyboardEvent) {
+      if (!pickerOpen) {
+        if ((e.key === 'Enter' || e.key === 'e' || e.key === 'E') && canElevator) {
+          e.preventDefault();
+          setPickIdx(first < 0 ? 0 : first);
+          setPickerOpen(true);
+        }
+        return;
+      }
+      if (e.key === 'Escape') setPickerOpen(false);
+      else if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 's' || e.key === 'w') {
+        e.preventDefault();
+        const dir = e.key === 'ArrowDown' || e.key === 's' ? 1 : -1;
+        setPickIdx((i) => {
+          let n = i;
+          for (let k = 0; k < FLOOR_ORDER.length; k++) {
+            n = (n + dir + FLOOR_ORDER.length) % FLOOR_ORDER.length;
+            if (FLOOR_ORDER[n] !== floorId) break;
+          }
+          return n;
+        });
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        const f = FLOOR_ORDER[pickIdx];
+        if (f !== floorId) {
+          api?.travelTo(f);
+          setPickerOpen(false);
+        }
+      }
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [canElevator, pickerOpen, pickIdx, floorId, api]);
 
   // 숨는 시간 진입 시각 → 시작 연출 타이머
   const [hidingStartAt, setHidingStartAt] = useState(0);
@@ -164,7 +206,7 @@ export function GameHud(props: Props) {
         state.phase !== 'FINISHED' &&
         !pickerOpen && (
           <button className="elevator-btn" onClick={() => setPickerOpen(true)}>
-            🛗 엘리베이터
+            🛗 엘리베이터 <kbd>Enter</kbd>
           </button>
         )
       )}
@@ -173,10 +215,10 @@ export function GameHud(props: Props) {
           <div className="overlay__card" onClick={(e) => e.stopPropagation()}>
             <h2>층 선택</h2>
             <div className="floor-picker">
-              {FLOOR_ORDER.map((f) => (
+              {FLOOR_ORDER.map((f, i) => (
                 <button
                   key={f}
-                  className="btn"
+                  className={`btn ${i === pickIdx ? 'is-sel' : ''}`}
                   disabled={f === floorId}
                   onClick={() => {
                     api?.travelTo(f);
@@ -187,9 +229,7 @@ export function GameHud(props: Props) {
                 </button>
               ))}
             </div>
-            <button className="btn btn--ghost" onClick={() => setPickerOpen(false)}>
-              닫기
-            </button>
+            <p className="muted">↑ ↓ 선택 · Enter 이동 · Esc 닫기</p>
           </div>
         </div>
       )}
@@ -230,6 +270,14 @@ export function GameHud(props: Props) {
             <b className="eyes-closed__time">{clock((state.hidingEndsAt ?? now) - now)}</b>
             <p className="muted">🎵 창밖으로 남산타워가 보인다</p>
           </div>
+        </div>
+      )}
+
+      {endgame.active && (
+        <div className={`endgame ${endgame.seeker ? 'endgame--seeker' : 'endgame--hider'}`}>
+          {endgame.seeker
+            ? `⚡ 막판! 도망자 ${endgame.dir || '???'}쪽 · 술래 가속`
+            : '⚡ 막판! 술래가 빨라졌다 — 30초 버텨라'}
         </div>
       )}
 

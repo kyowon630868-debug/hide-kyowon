@@ -5,7 +5,15 @@ import type { Room } from '../net/Room';
 import type { GameSync } from '../net/GameSync';
 
 /** 씬이 game.events 로 올려보내는 이벤트 이름들 */
-const FORWARD = ['hud', 'proximity', 'elevator', 'elevator-travel', 'hintResult', 'api'] as const;
+const FORWARD = [
+  'hud',
+  'proximity',
+  'elevator',
+  'elevator-travel',
+  'hintResult',
+  'api',
+  'endgame',
+] as const;
 export type CanvasEvent = (typeof FORWARD)[number];
 
 /**

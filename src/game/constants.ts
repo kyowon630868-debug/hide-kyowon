@@ -7,12 +7,19 @@
 export const TILE_SIZE = 32;
 
 /** 플레이어 이동 속도 (픽셀 / 초) */
-export const PLAYER_SPEED = 170;
+export const PLAYER_SPEED = 172;
+/** 술래는 도망자보다 살짝 빠르다 */
+export const SEEKER_SPEED = 184;
+/** 마지막 30초 "막판" — 술래 추가 가속 */
+export const ENDGAME_SECONDS = 30;
+export const ENDGAME_SEEKER_BOOST = 1.14;
 
 /** 게임 진행 시간 (초). 나중에 밸런스 조정 시 여기만 수정 */
 export const GAME_TIMING = {
   HIDING_SECONDS: 30,
-  CHASING_SECONDS: 180,
+  /** 추격 시간 = BASE + PER_HIDER × 도망자 수 (1v1 은 짧고 박진감 있게) */
+  CHASING_BASE: 55,
+  CHASING_PER_HIDER: 35,
 } as const;
 
 /** 잡기 판정 거리 (타일 단위) */

@@ -2,7 +2,11 @@ import Phaser from 'phaser';
 import {
   ELEVATOR_REACH,
   ELEVATOR_TRAVEL_MS,
+  ENDGAME_SECONDS,
+  ENDGAME_SEEKER_BOOST,
   HINT_COOLDOWN_MS,
+  PLAYER_SPEED,
+  SEEKER_SPEED,
   TILE_SIZE,
 } from '../constants';
 import { FLOOR_3 } from '../maps/floor3';
@@ -54,6 +58,7 @@ export class WorldScene extends Phaser.Scene {
   private lastProximity = -1;
   private lastShakeAt = 0;
   private lastPhase = '';
+  private lastEndgameKey = '';
   private nearElevator = false;
   private traveling = false;
   private lastHintAt = 0;
@@ -106,8 +111,35 @@ export class WorldScene extends Phaser.Scene {
     });
 
     this.sync.frame(Object.fromEntries(this.netPositions), Date.now());
-    this.updateProximity(this.sync.getState());
+    const s = this.sync.getState();
+    this.updateProximity(s);
     this.updateElevatorProximity();
+    this.updateSpeedAndEndgame(s);
+  }
+
+  /** 역할 이동속도 + 막판(마지막 30초) 처리 */
+  private updateSpeedAndEndgame(s: GameState) {
+    const myId = this.room?.selfId ?? '';
+    const iAmSeeker = s.seekerId === myId;
+    const remain = s.chasingEndsAt ? s.chasingEndsAt - Date.now() : Infinity;
+    const endgame = s.phase === 'PLAYING' && remain <= ENDGAME_SECONDS * 1000 && remain > 0;
+
+    if (s.phase === 'PLAYING' && iAmSeeker) {
+      this.player.setSpeed(SEEKER_SPEED * (endgame ? ENDGAME_SEEKER_BOOST : 1));
+    } else {
+      this.player.setSpeed(PLAYER_SPEED);
+    }
+
+    let dir = '';
+    if (endgame && iAmSeeker) {
+      const hint = GameRules.computeHint('direction', s, Object.fromEntries(this.netPositions));
+      if (hint.kind === 'direction') dir = hint.dir;
+    }
+    const key = `${endgame}|${iAmSeeker}|${dir}`;
+    if (key !== this.lastEndgameKey) {
+      this.lastEndgameKey = key;
+      this.game.events.emit('endgame', { active: endgame, seeker: iAmSeeker, dir });
+    }
   }
 
   // ── 엘리베이터 ─────────────────────────────────────────────

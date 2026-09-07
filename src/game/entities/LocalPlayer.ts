@@ -14,6 +14,7 @@ export class LocalPlayer extends Phaser.Physics.Arcade.Sprite {
   private facing: Direction = 'down';
   private movingNow = false;
   private controlEnabled = true;
+  private speed = PLAYER_SPEED;
   readonly label: Phaser.GameObjects.Text;
 
   constructor(scene: Phaser.Scene, x: number, y: number, nickname: string) {
@@ -48,6 +49,11 @@ export class LocalPlayer extends Phaser.Physics.Arcade.Sprite {
     this.controlEnabled = on;
   }
 
+  /** 역할·막판에 따라 씬이 이동 속도를 조정 */
+  setSpeed(px: number) {
+    this.speed = px;
+  }
+
   /** 연출용 — 방향을 강제로 지정 (스냅샷에도 반영되어 다른 화면에서도 같은 방향으로 보임) */
   forceFacing(dir: Direction) {
     this.facing = dir;
@@ -74,8 +80,8 @@ export class LocalPlayer extends Phaser.Physics.Arcade.Sprite {
     let vx = (right ? 1 : 0) - (left ? 1 : 0);
     let vy = (down ? 1 : 0) - (up ? 1 : 0);
     const len = Math.hypot(vx, vy) || 1;
-    vx = (vx / len) * PLAYER_SPEED;
-    vy = (vy / len) * PLAYER_SPEED;
+    vx = (vx / len) * this.speed;
+    vy = (vy / len) * this.speed;
     this.setVelocity(vx, vy);
 
     const moving = vx !== 0 || vy !== 0;

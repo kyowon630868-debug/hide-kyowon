@@ -52,6 +52,9 @@ export const GameRules = {
       if (id !== seeker) alive[id] = true;
     });
 
+    const chaseSec =
+      GAME_TIMING.CHASING_BASE + GAME_TIMING.CHASING_PER_HIDER * Object.keys(alive).length;
+
     return {
       ...this.initial(),
       phase: 'HIDING',
@@ -59,8 +62,7 @@ export const GameRules = {
       alive,
       spawns,
       hidingEndsAt: now + GAME_TIMING.HIDING_SECONDS * 1000,
-      chasingEndsAt:
-        now + (GAME_TIMING.HIDING_SECONDS + GAME_TIMING.CHASING_SECONDS) * 1000,
+      chasingEndsAt: now + (GAME_TIMING.HIDING_SECONDS + chaseSec) * 1000,
       rev: prev.rev + 1,
     };
   },

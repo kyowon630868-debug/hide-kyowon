@@ -28,6 +28,11 @@ export function GameScreen({
   const [hint, setHint] = useState<{ result: HintResult; cooldownUntil: number } | null>(null);
   const [api, setApi] = useState<HudApi | null>(null);
   const [rosterOpen, setRosterOpen] = useState(false);
+  const [endgame, setEndgame] = useState<{ active: boolean; seeker: boolean; dir: string }>({
+    active: false,
+    seeker: false,
+    dir: '',
+  });
 
   const selfId = room?.selfId ?? '';
 
@@ -53,6 +58,9 @@ export function GameScreen({
         break;
       case 'api':
         setApi(payload as HudApi);
+        break;
+      case 'endgame':
+        setEndgame(payload as { active: boolean; seeker: boolean; dir: string });
         break;
     }
   }
@@ -98,6 +106,7 @@ export function GameScreen({
           traveling={traveling}
           hint={hint}
           api={api}
+          endgame={endgame}
           onStart={() => sync?.startGame(roster.map((r) => r.id))}
           onRestart={() => sync?.restart()}
         />
