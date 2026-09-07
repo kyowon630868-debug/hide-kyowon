@@ -61,6 +61,7 @@ export class WorldScene extends Phaser.Scene {
   private lastEndgameKey = '';
   private nearElevator = false;
   private traveling = false;
+  private uiLocked = false;
   private lastHintAt = 0;
 
   constructor() {
@@ -95,7 +96,19 @@ export class WorldScene extends Phaser.Scene {
     this.game.events.emit('api', {
       travelTo: (floorId: number) => this.travelTo(floorId),
       requestHint: (kind: HintKind) => this.requestHint(kind),
+      setUiLock: (v: boolean) => {
+        this.uiLocked = v;
+        this.refreshControl();
+      },
     });
+  }
+
+  /** 조작 가능 여부 = 페이즈 동결(숨기 술래) · 엘리베이터 이동 중 · UI(층 선택 등) 열림 을 모두 고려 */
+  private refreshControl() {
+    const s = this.sync?.getState();
+    const myRole = s ? GameRules.roleOf(s, this.room?.selfId ?? '') : null;
+    const frozen = s?.phase === 'HIDING' && myRole === 'SEEKER';
+    this.player.setControlEnabled(!frozen && !this.traveling && !this.uiLocked);
   }
 
   update() {
@@ -160,15 +173,15 @@ export class WorldScene extends Phaser.Scene {
     if (!getFloor(floorId)) return;
 
     this.traveling = true;
-    this.player.setControlEnabled(false);
+    this.refreshControl();
     (this.player.body as Phaser.Physics.Arcade.Body).setVelocity(0, 0);
     this.game.events.emit('elevator-travel', { to: floorId });
 
     this.cameras.main.fadeOut(200);
     this.time.delayedCall(ELEVATOR_TRAVEL_MS, () => {
       this.changeFloor(floorId, true);
-      this.player.setControlEnabled(true);
       this.traveling = false;
+      this.refreshControl();
       this.nearElevator = false;
       this.cameras.main.fadeIn(200);
       this.game.events.emit('elevator-travel', null);
@@ -229,8 +242,7 @@ export class WorldScene extends Phaser.Scene {
     const leavingHiding = this.lastPhase === 'HIDING' && s.phase !== 'HIDING';
     this.lastPhase = s.phase;
 
-    const frozen = s.phase === 'HIDING' && myRole === 'SEEKER';
-    if (!this.traveling) this.player.setControlEnabled(!frozen);
+    this.refreshControl();
 
     if (enteringHiding && myRole === 'SEEKER') this.playSeekerIntro(s);
     if (leavingHiding) {

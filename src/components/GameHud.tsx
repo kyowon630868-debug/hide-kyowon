@@ -13,6 +13,7 @@ const INTRO_MS = 4000;
 export interface HudApi {
   travelTo: (floorId: number) => void;
   requestHint: (kind: HintKind) => void;
+  setUiLock: (locked: boolean) => void;
 }
 
 interface Props {
@@ -86,6 +87,12 @@ export function GameHud(props: Props) {
   useEffect(() => {
     if (state.phase === 'WAITING') setWaitingDismissed(false);
   }, [state.phase]);
+
+  // 층 선택 등 UI 가 열려 있으면 캐릭터가 움직이지 않게 씬에 알린다
+  useEffect(() => {
+    api?.setUiLock(pickerOpen);
+    return () => api?.setUiLock(false);
+  }, [pickerOpen, api]);
 
   // 엘리베이터: 키보드만으로 조작 (Enter/E 로 열기, ↑↓ 선택, Enter 이동, Esc 닫기)
   const canElevator = elevatorNear && !traveling && state.phase !== 'FINISHED';
