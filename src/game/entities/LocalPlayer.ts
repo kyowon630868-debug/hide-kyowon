@@ -21,9 +21,9 @@ export class LocalPlayer extends Phaser.Physics.Arcade.Sprite {
     scene.add.existing(this);
     scene.physics.add.existing(this);
 
-    // 충돌 박스는 발밑만 (16x32 프레임 기준)
-    this.setSize(8, 6);
-    this.setOffset(4, 25);
+    // 충돌 박스는 발밑만 (32x64 프레임 기준)
+    this.setSize(14, 10);
+    this.setOffset(9, 50);
     this.setCollideWorldBounds(true);
     this.setDepth(10);
 
@@ -32,7 +32,7 @@ export class LocalPlayer extends Phaser.Physics.Arcade.Sprite {
     this.cursors = kb.createCursorKeys();
 
     this.label = scene.add
-      .text(x, y - 22, nickname, {
+      .text(x, y - 42, nickname, {
         fontFamily: 'monospace',
         fontSize: '11px',
         color: '#ffffff',
@@ -62,7 +62,7 @@ export class LocalPlayer extends Phaser.Physics.Arcade.Sprite {
       this.setVelocity(0, 0);
       this.movingNow = false;
       applyCharAnim(this, this.facing, false);
-      this.label.setPosition(this.x, this.y - 20);
+      this.label.setPosition(this.x, this.y - 40);
       return;
     }
 
@@ -87,7 +87,7 @@ export class LocalPlayer extends Phaser.Physics.Arcade.Sprite {
     }
     applyCharAnim(this, this.facing, moving);
 
-    this.label.setPosition(this.x, this.y - 20);
+    this.label.setPosition(this.x, this.y - 40);
   }
 
   /** WorldScene 이 읽어서 네트워크로 보낼 현재 상태 (floor 는 씬이 채운다) */

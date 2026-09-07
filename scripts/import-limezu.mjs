@@ -69,9 +69,9 @@ console.log('LimeZu 가져오기 →', OUT);
 const rb = load('Interiors_free/32x32/Room_Builder_free_32x32.png');
 const FLOOR_SRC = {
   'floor-pantry': [384, 160], // 붉은 벽돌
-  'floor-corridor': [384, 224], // 크림 체커
+  'floor-office': [384, 224], // 크림 체커 (깔끔)
   'floor-restroom': [384, 288], // 민트 원형
-  'floor-office': [448, 256], // 회색 카펫(플레이드)
+  'floor-corridor': [448, 256], // 회색 (복도)
   'floor-meeting': [384, 416], // 헤링본 우드
 };
 for (const [key, [x, y]] of Object.entries(FLOOR_SRC)) {
@@ -106,9 +106,26 @@ save('tiles/wall-low.png', wallTex([220, 236, 233], [200, 224, 220], [150, 190, 
 // LimeZu 방향 순서: 좌(0) 위(1) 우(2) 아래(3)
 // idle_16x16 (64x32, 4프레임): L U R D
 // run_16x16 (384x32, 24프레임 = 4방향 x 6): L 0-5 · U 6-11 · R 12-17 · D 18-23
-const FW = 16;
-const FH = 32;
-const frameFrom = (img, i) => crop(img, i * FW, 0, FW, FH);
+const SW = 16;
+const SH = 32;
+const FW = 32; // 32px 가구/타일에 맞춰 캐릭터를 2배 확대 (nearest neighbor)
+const FH = 64;
+const frameFrom = (img, i) => crop(img, i * SW, 0, SW, SH);
+
+/** nearest-neighbor 2x */
+function scale2x(src) {
+  const o = new PNG({ width: src.width * 2, height: src.height * 2 });
+  for (let y = 0; y < src.height; y++)
+    for (let x = 0; x < src.width; x++) {
+      const si = (y * src.width + x) * 4;
+      for (let dy = 0; dy < 2; dy++)
+        for (let dx = 0; dx < 2; dx++) {
+          const di = ((y * 2 + dy) * o.width + (x * 2 + dx)) * 4;
+          for (let c = 0; c < 4; c++) o.data[di + c] = src.data[si + c];
+        }
+    }
+  return o;
+}
 
 function buildChar(name) {
   const idle = load(`Characters_free/${name}_idle_16x16.png`);
@@ -116,12 +133,13 @@ function buildChar(name) {
   const sheet = new PNG({ width: FW * 6, height: FH });
   sheet.data.fill(0);
   // [0]하-정지 [1]하-걷기 [2]상-정지 [3]상-걷기 [4]옆(우)-정지 [5]옆(우)-걷기
-  blit(sheet, frameFrom(idle, 3), 0 * FW, 0);
-  blit(sheet, frameFrom(run, 20), 1 * FW, 0);
-  blit(sheet, frameFrom(idle, 1), 2 * FW, 0);
-  blit(sheet, frameFrom(run, 8), 3 * FW, 0);
-  blit(sheet, frameFrom(idle, 2), 4 * FW, 0);
-  blit(sheet, frameFrom(run, 14), 5 * FW, 0);
+  const put = (img, i, col) => blit(sheet, scale2x(frameFrom(img, i)), col * FW, 0);
+  put(idle, 3, 0);
+  put(run, 20, 1);
+  put(idle, 1, 2);
+  put(run, 8, 3);
+  put(idle, 2, 4);
+  put(run, 14, 5);
   return sheet;
 }
 
@@ -130,7 +148,27 @@ const CHARS = ['Adam', 'Alex', 'Amelia', 'Bob'];
 const chars = new PNG({ width: FW * 6, height: FH * CHARS.length });
 chars.data.fill(0);
 CHARS.forEach((n, r) => blit(chars, buildChar(n), 0, r * FH));
-save('characters/chars.png', chars);
-save('characters/chibi.png', buildChar('Adam'));
+save('characters/chars.png', chars); // 192x256
+save('characters/chibi.png', buildChar('Adam')); // 192x64
+
+// ── 가구 (Interiors_free_32x32) ──────────────────────────
+// 좌표는 scripts/_blobs.mjs 로 확인한 아틀라스 절대 픽셀.
+const it = load('Interiors_free/32x32/Interiors_free_32x32.png');
+const FURN = {
+  desk: [164, 1166, 56, 50], // 책·펜꽂이 올려진 나무 책상
+  chair: [388, 994, 26, 42], // 사무용 의자 (옆, 오른쪽 향함)
+  monitor: [78, 1282, 44, 44], // 파란 모니터 (책상 위 데코용)
+  cabinet: [352, 774, 64, 56], // 나무 캐비닛+거울
+  bookshelf: [6, 1454, 52, 74], // 책 꽂힌 책장
+  whiteboard: [330, 692, 42, 26], // 초록 칠판 (벽걸이)
+  'meeting-table': [32, 1154, 128, 46], // 긴 데스크(노트북가방·서류·머그)
+  rug: [96, 1348, 96, 56], // 파란 테두리 러그
+  bulletin: [416, 1232, 62, 42], // 컬러 게시판
+  plant: [426, 1408, 46, 62], // 화분 야자
+  'plant-bush': [334, 1426, 36, 62], // 화분 관목
+};
+for (const [key, [x, y, w, h]] of Object.entries(FURN)) {
+  save(`furniture/${key}.png`, crop(it, x, y, w, h));
+}
 
 console.log('done. (프레임 16x32 → src/game/assets.ts 의 CHAR_FRAME 확인)');

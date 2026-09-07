@@ -31,7 +31,7 @@ export class RemotePlayer extends Phaser.GameObjects.Sprite {
     this.floor = snap.floor;
 
     this.label = scene.add
-      .text(snap.x, snap.y - 20, snap.name, {
+      .text(snap.x, snap.y - 42, snap.name, {
         fontFamily: 'monospace',
         fontSize: '11px',
         color: '#cfe0ff',
@@ -86,7 +86,7 @@ export class RemotePlayer extends Phaser.GameObjects.Sprite {
     }
 
     this.applyFacing(dir, moving);
-    this.label.setPosition(this.x, this.y - 20);
+    this.label.setPosition(this.x, this.y - 40);
   }
 
   private applyFacing(dir: Direction, moving: boolean) {
