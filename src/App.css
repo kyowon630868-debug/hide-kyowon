@@ -372,6 +372,37 @@
   }
 }
 
+/* 대기 중 하단 패널 (화면 안 가림) */
+.waitbar {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 12px;
+  background: rgba(10, 12, 24, 0.9);
+  border: 1px solid #2b2f4a;
+  z-index: 35;
+  max-width: 92%;
+}
+.waitbar__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+  font-size: 13px;
+}
+.waitbar b {
+  font-size: 14px;
+}
+.waitbar .muted {
+  color: #8b90b5;
+}
+
 /* 술래: 눈 감음 */
 .eyes-closed {
   position: absolute;

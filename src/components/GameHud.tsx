@@ -77,7 +77,13 @@ export function GameHud(props: Props) {
 
   const [pickerOpen, setPickerOpen] = useState(false);
   const [evadeToast, setEvadeToast] = useState(0);
+  const [waitingDismissed, setWaitingDismissed] = useState(false);
   const prevEvade = useRef(0);
+
+  // 새 라운드가 시작되면 다시 대기 패널을 보이게
+  useEffect(() => {
+    if (state.phase === 'WAITING') setWaitingDismissed(false);
+  }, [state.phase]);
 
   // 숨는 시간 진입 시각 → 시작 연출 타이머
   const [hidingStartAt, setHidingStartAt] = useState(0);
@@ -188,19 +194,30 @@ export function GameHud(props: Props) {
         </div>
       )}
 
-      {/* 단계별 중앙 카드 */}
-      {state.phase === 'WAITING' && (
-        <Center>
-          <h2>게임 대기 중</h2>
-          <p>참여 인원 {roster.length} / 5</p>
-          {isHost ? (
-            <button className="btn btn--primary" disabled={roster.length < 2} onClick={props.onStart}>
-              {roster.length < 2 ? '2명 이상 필요' : '게임 시작'}
+      {/* 대기 중: 화면을 가리지 않는 하단 패널 (걸어다니며 맵 구경 가능) */}
+      {state.phase === 'WAITING' && !waitingDismissed && (
+        <div className="waitbar">
+          <div className="waitbar__row">
+            <b>게임 대기 중</b>
+            <span className="muted">참여 {roster.length}/5 · 지금 자유롭게 돌아다닐 수 있어요</span>
+          </div>
+          <div className="waitbar__row">
+            {isHost ? (
+              <button
+                className="btn btn--primary"
+                disabled={roster.length < 2}
+                onClick={props.onStart}
+              >
+                {roster.length < 2 ? '게임 시작 (2명~)' : '게임 시작'}
+              </button>
+            ) : (
+              <span className="muted">방장이 시작하기를 기다리는 중…</span>
+            )}
+            <button className="btn btn--ghost" onClick={() => setWaitingDismissed(true)}>
+              혼자 둘러보기
             </button>
-          ) : (
-            <p className="muted">방장이 시작하기를 기다리는 중…</p>
-          )}
-        </Center>
+          </div>
+        </div>
       )}
 
       {introActive && <IntroCinematic role={role} seekerName={seekerName} elapsed={introElapsed} />}
