@@ -6,13 +6,20 @@
 /** 타일 한 칸의 픽셀 크기 */
 export const TILE_SIZE = 32;
 
-/** 플레이어 이동 속도 (픽셀 / 초) */
-export const PLAYER_SPEED = 172;
-/** 술래는 도망자보다 살짝 빠르다 */
-export const SEEKER_SPEED = 184;
+/** 걷기 속도 (픽셀 / 초) */
+export const PLAYER_SPEED = 158; // 도망자
+export const SEEKER_SPEED = 170; // 술래는 살짝 빠름
+
 /** 마지막 30초 "막판" — 술래 추가 가속 */
 export const ENDGAME_SECONDS = 30;
-export const ENDGAME_SEEKER_BOOST = 1.14;
+export const ENDGAME_SEEKER_BOOST = 1.12;
+
+/** 부스터(달리기): Shift 를 누르면 빨라지지만 스태미나를 쓴다 */
+export const SPRINT_MULT = 1.55;
+export const STAMINA_MAX = 100;
+export const STAMINA_DRAIN = 34; // 초당 소모
+export const STAMINA_REGEN = 16; // 초당 회복
+/** 스태미나가 0 이 되면 25% 이상 찰 때까지 다시 못 달린다 (LocalPlayer 내부 처리) */
 
 /** 게임 진행 시간 (초). 나중에 밸런스 조정 시 여기만 수정 */
 export const GAME_TIMING = {

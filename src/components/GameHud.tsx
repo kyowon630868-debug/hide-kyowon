@@ -29,6 +29,7 @@ interface Props {
   hint: { result: HintResult; cooldownUntil: number } | null;
   api: HudApi | null;
   endgame: { active: boolean; seeker: boolean; dir: string };
+  stamina: { value: number; max: number; sprinting: boolean };
   onStart: () => void;
   onRestart: () => void;
 }
@@ -70,7 +71,7 @@ function hintText(r: HintResult): string {
 }
 
 export function GameHud(props: Props) {
-  const { state, roster, selfId, isHost, floorName, floorId, proximity, elevatorNear, traveling, hint, api, endgame } =
+  const { state, roster, selfId, isHost, floorName, floorId, proximity, elevatorNear, traveling, hint, api, endgame, stamina } =
     props;
   const now = useNow(state.phase === 'HIDING' || state.phase === 'PLAYING');
   const role = GameRules.roleOf(state, selfId);
@@ -277,6 +278,17 @@ export function GameHud(props: Props) {
             <b className="eyes-closed__time">{clock((state.hidingEndsAt ?? now) - now)}</b>
             <p className="muted">🎵 창밖으로 남산타워가 보인다</p>
           </div>
+        </div>
+      )}
+
+      {/* 부스터 스태미나 바 */}
+      {(state.phase === 'HIDING' || state.phase === 'PLAYING') && !introActive && (
+        <div className="stamina">
+          <div
+            className={`stamina__fill ${stamina.sprinting ? 'is-sprint' : ''} ${stamina.value < 20 ? 'is-low' : ''}`}
+            style={{ width: `${(stamina.value / stamina.max) * 100}%` }}
+          />
+          <span className="stamina__label">⚡ Shift 달리기</span>
         </div>
       )}
 

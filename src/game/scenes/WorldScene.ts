@@ -7,6 +7,7 @@ import {
   HINT_COOLDOWN_MS,
   PLAYER_SPEED,
   SEEKER_SPEED,
+  STAMINA_MAX,
   TILE_SIZE,
 } from '../constants';
 import { FLOOR_3 } from '../maps/floor3';
@@ -59,6 +60,7 @@ export class WorldScene extends Phaser.Scene {
   private lastShakeAt = 0;
   private lastPhase = '';
   private lastEndgameKey = '';
+  private lastStaminaKey = '';
   private nearElevator = false;
   private traveling = false;
   private uiLocked = false;
@@ -128,6 +130,19 @@ export class WorldScene extends Phaser.Scene {
     this.updateProximity(s);
     this.updateElevatorProximity();
     this.updateSpeedAndEndgame(s);
+    this.emitStamina();
+  }
+
+  private emitStamina() {
+    const v = Math.round(this.player.stamina);
+    const key = `${v}|${this.player.sprinting}`;
+    if (key === this.lastStaminaKey) return;
+    this.lastStaminaKey = key;
+    this.game.events.emit('stamina', {
+      value: v,
+      max: STAMINA_MAX,
+      sprinting: this.player.sprinting,
+    });
   }
 
   /** 역할 이동속도 + 막판(마지막 30초) 처리 */

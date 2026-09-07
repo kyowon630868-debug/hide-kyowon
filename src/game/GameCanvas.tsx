@@ -13,6 +13,7 @@ const FORWARD = [
   'hintResult',
   'api',
   'endgame',
+  'stamina',
 ] as const;
 export type CanvasEvent = (typeof FORWARD)[number];
 

@@ -33,6 +33,11 @@ export function GameScreen({
     seeker: false,
     dir: '',
   });
+  const [stamina, setStamina] = useState<{ value: number; max: number; sprinting: boolean }>({
+    value: 100,
+    max: 100,
+    sprinting: false,
+  });
 
   const selfId = room?.selfId ?? '';
 
@@ -61,6 +66,9 @@ export function GameScreen({
         break;
       case 'endgame':
         setEndgame(payload as { active: boolean; seeker: boolean; dir: string });
+        break;
+      case 'stamina':
+        setStamina(payload as { value: number; max: number; sprinting: boolean });
         break;
     }
   }
@@ -107,6 +115,7 @@ export function GameScreen({
           hint={hint}
           api={api}
           endgame={endgame}
+          stamina={stamina}
           onStart={() => sync?.startGame(roster.map((r) => r.id))}
           onRestart={() => sync?.restart()}
         />
