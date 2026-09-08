@@ -16,8 +16,8 @@ export function applyCharAnim(
   fast = false,
 ): void {
   const base = dir === 'up' ? 2 : dir === 'down' ? 0 : 4;
-  // 옆면 기본 프레임이 '왼쪽'을 보므로 오른쪽일 때 뒤집는다
-  sprite.setFlipX(dir === 'right');
+  // 옆면 기본 프레임이 '오른쪽'을 보므로 왼쪽으로 갈 때 뒤집는다
+  sprite.setFlipX(dir === 'left');
   const idle = row * 6 + base;
   if (moving) {
     const step = Math.floor(sprite.scene.time.now / (fast ? WALK_MS / 1.7 : WALK_MS)) % 2;
