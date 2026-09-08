@@ -247,7 +247,9 @@ export function GameHud(props: Props) {
         <div className="waitbar">
           <div className="waitbar__row">
             <b>게임 대기 중</b>
-            <span className="muted">참여 {roster.length}/5 · 지금 자유롭게 돌아다닐 수 있어요</span>
+            <span className="muted">
+              참여 {roster.length}/5 · 이동 WASD · <kbd>Shift</kbd> 달리기 · <kbd>H</kbd> 도움말
+            </span>
           </div>
           <div className="waitbar__row">
             {isHost ? (
@@ -281,14 +283,16 @@ export function GameHud(props: Props) {
         </div>
       )}
 
-      {/* 부스터 스태미나 바 */}
-      {(state.phase === 'HIDING' || state.phase === 'PLAYING') && !introActive && (
+      {/* 부스터 스태미나 바 — 움직일 수 있는 동안 항상 표시 */}
+      {state.phase !== 'FINISHED' && !introActive && (
         <div className="stamina">
           <div
             className={`stamina__fill ${stamina.sprinting ? 'is-sprint' : ''} ${stamina.value < 20 ? 'is-low' : ''}`}
             style={{ width: `${(stamina.value / stamina.max) * 100}%` }}
           />
-          <span className="stamina__label">⚡ Shift 달리기</span>
+          <span className="stamina__label">
+            {stamina.sprinting ? '⚡ 달리는 중' : '⚡ Shift · Space 달리기'}
+          </span>
         </div>
       )}
 
