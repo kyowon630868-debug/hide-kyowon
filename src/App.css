@@ -78,9 +78,10 @@
 }
 .lobby2__title {
   margin: 0;
-  font-size: clamp(28px, 8vw, 40px);
+  font-size: clamp(26px, 7vw, 36px);
   font-weight: 900;
-  letter-spacing: 2px;
+  letter-spacing: 1px;
+  white-space: nowrap;
   color: #fff;
   text-shadow: 0 0 22px #6a63ff88, 0 3px 0 #000;
 }

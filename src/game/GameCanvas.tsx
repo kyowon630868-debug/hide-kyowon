@@ -40,28 +40,17 @@ export function GameCanvas({
     const host = hostRef.current;
     if (!host || !room || !sync) return;
 
-    let game: Phaser.Game | null = null;
-    let raf = 0;
-
-    // 컨테이너가 0 크기인 동안 Phaser 를 만들면 WebGL 프레임버퍼가 깨진다 → 크기가 잡힐 때까지 대기
-    const startWhenSized = () => {
-      if (host.clientWidth > 0 && host.clientHeight > 0) {
-        game = createGame(host, room, sync);
-        for (const name of FORWARD) {
-          game.events.on(name, (p: unknown) => onEventRef.current?.(name, p));
-        }
-        if (import.meta.env.DEV) {
-          (window as unknown as { game: Phaser.Game }).game = game;
-        }
-      } else {
-        raf = requestAnimationFrame(startWhenSized);
-      }
-    };
-    startWhenSized();
+    // Scale.FIT + 고정 1280x720 이라 드로잉 버퍼가 컨테이너 크기와 무관 → 바로 생성해도 안전
+    const game = createGame(host, room, sync);
+    for (const name of FORWARD) {
+      game.events.on(name, (p: unknown) => onEventRef.current?.(name, p));
+    }
+    if (import.meta.env.DEV) {
+      (window as unknown as { game: Phaser.Game }).game = game;
+    }
 
     return () => {
-      cancelAnimationFrame(raf);
-      game?.destroy(true);
+      game.destroy(true);
     };
   }, [room, sync]);
 

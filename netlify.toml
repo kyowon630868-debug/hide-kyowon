@@ -1,0 +1,10 @@
+# Netlify / Vercel 둘 다 이 설정 없이도 Vite 를 자동 인식하지만, 명시해 둔다.
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+# SPA — 어떤 경로로 새로고침해도 index.html
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
