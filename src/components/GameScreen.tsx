@@ -4,6 +4,7 @@ import { useGame } from '../hooks/useGame';
 import { useChat } from '../hooks/useChat';
 import { GameCanvas, type CanvasEvent } from '../game/GameCanvas';
 import { GameHud, type HudApi } from './GameHud';
+import { HelpPanel } from './HelpPanel';
 import { ChatDock } from './ChatDock';
 import { bgm } from '../game/audio';
 import type { HintResult } from '../game-logic/types';
@@ -119,6 +120,8 @@ export function GameScreen({
           onStart={() => sync?.startGame(roster.map((r) => r.id))}
           onRestart={() => sync?.restart()}
         />
+
+        <HelpPanel api={api} />
 
         <ChatDock messages={chat.messages} selfId={selfId} onSend={chat.send} />
       </GameCanvas>

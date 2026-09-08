@@ -861,3 +861,117 @@ kbd {
   padding: 0 13px;
   cursor: pointer;
 }
+
+/* ── 도움말 패널 ── */
+.help-btn {
+  position: absolute;
+  top: 46px;
+  left: 10px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid #2b2f4a;
+  background: rgba(8, 9, 18, 0.82);
+  color: #cfe0ff;
+  font: 700 15px/1 ui-monospace, Consolas, monospace;
+  cursor: pointer;
+  z-index: 30;
+}
+.help-btn:hover {
+  background: rgba(40, 44, 72, 0.95);
+}
+.help__overlay {
+  z-index: 60;
+  padding: 20px;
+  overflow-y: auto;
+}
+.help__card {
+  background: #14162a;
+  border: 1px solid #2f3350;
+  border-radius: 14px;
+  padding: 20px 22px;
+  width: min(620px, 100%);
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+}
+.help__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.help__top h2 {
+  margin: 0;
+  font-size: 18px;
+  color: #eef1ff;
+}
+.help__x {
+  border: 0;
+  background: transparent;
+  color: #9aa0bd;
+  font-size: 15px;
+  cursor: pointer;
+}
+.help__welcome,
+.help__note {
+  color: #b9bdda;
+  font-size: 12.5px;
+  line-height: 1.55;
+}
+.help__welcome {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #1c2140;
+  border: 1px solid #2f3564;
+  color: #d5dbff;
+}
+.help__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 20px;
+}
+@media (max-width: 520px) {
+  .help__grid {
+    grid-template-columns: 1fr;
+  }
+}
+.help__section h3 {
+  margin: 0 0 6px;
+  font-size: 13px;
+  color: #8fe6a4;
+  letter-spacing: 0.3px;
+}
+.help__section ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.help__section li {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 13px;
+  color: #e7e9f5;
+}
+.help__keys {
+  flex: none;
+  min-width: 82px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+.help__keys kbd {
+  margin: 0;
+}
+.help__note {
+  margin: 6px 0 0;
+}
+.help__close {
+  display: block;
+  width: 100%;
+  margin-top: 16px;
+}
