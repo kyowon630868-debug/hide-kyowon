@@ -30,6 +30,10 @@ export interface GameState {
   hintSpent: Record<string, number>;
   /** 도망자별 회피 성공 횟수 */
   evadeCount: Record<string, number>;
+  /** 도망자별 숨기 종료 시각 (epoch ms). 없거나 과거면 안 숨은 상태 */
+  hidden: Record<string, number>;
+  /** 도망자별 남은 숨기 횟수 */
+  hideCharges: Record<string, number>;
   winner: Winner;
   /** 상태 리비전 — 오래 도착한 브로드캐스트를 무시하는 용도 */
   rev: number;

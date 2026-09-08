@@ -1,5 +1,12 @@
 import { useEffect, useState } from 'react';
-import { HINT_COST, HINT_COOLDOWN_MS, ENDGAME_SECONDS, EVADE_BONUS } from '../game/constants';
+import {
+  HINT_COST,
+  HINT_COOLDOWN_MS,
+  ENDGAME_SECONDS,
+  EVADE_BONUS,
+  HIDE_CHARGES,
+  HIDE_DURATION_MS,
+} from '../game/constants';
 import type { HudApi } from './GameHud';
 
 const SEEN_KEY = 'hk_seen_help';
@@ -114,17 +121,26 @@ export function HelpPanel({ api }: { api: HudApi | null }) {
               <Section
                 title="이동"
                 rows={[
-                  { keys: ['W', 'A', 'S', 'D'], label: '상하좌우 이동' },
-                  { keys: ['↑', '↓', '←', '→'], label: '방향키로도 이동' },
+                  { keys: ['↑', '↓', '←', '→'], label: '방향키로 이동' },
+                  { keys: ['W', 'A', 'S', 'D'], label: '원하면 WASD 도 됨' },
                 ]}
               />
               <Section
                 title="달리기 (부스터)"
                 rows={[
-                  { keys: ['Shift'], label: '누르고 있으면 질주' },
-                  { keys: ['Space'], label: '같은 기능' },
+                  { keys: ['Shift', '+', '방향키'], label: '누르고 있으면 질주' },
+                  { keys: ['Space'], label: 'Shift 대신 써도 됨' },
                 ]}
                 note={`화면 아래 ⚡ 게이지가 스태미나예요. 다 쓰면 잠깐 못 뛰고, 안 뛰면 다시 차요. 술래는 이걸로 따라잡고, 도망자는 이걸로 뿌리쳐요.`}
+              />
+              <Section
+                title="숨기 (도망자)"
+                rows={[
+                  { keys: ['F'], label: '가구 근처에서 잠깐 사라지기' },
+                ]}
+                note={`책상·캐비닛 같은 가구 옆에서 ${'F'} 를 누르면 ${Math.round(
+                  HIDE_DURATION_MS / 1000,
+                )}초간 화면에서 사라져요. 술래는 그동안 못 잡습니다. 한 게임에 ${HIDE_CHARGES}번. 숨는 동안엔 못 움직여요.`}
               />
               <Section
                 title="엘리베이터 (층 이동)"

@@ -2,6 +2,8 @@ import {
   CATCH_DISTANCE_TILES,
   EVADE_BONUS,
   GAME_TIMING,
+  HIDE_CHARGES,
+  HIDE_DURATION_MS,
   HINT_FAR_TILES,
   HINT_NEAR_TILES,
   TILE_SIZE,
@@ -37,6 +39,8 @@ export const GameRules = {
       spawns: {},
       hintSpent: {},
       evadeCount: {},
+      hidden: {},
+      hideCharges: {},
       winner: null,
       rev: 0,
     };
@@ -47,9 +51,13 @@ export const GameRules = {
     const seeker = seekerId ?? pickRandom(playerIds);
     const alive: Record<string, boolean> = {};
     const spawns: Record<string, number> = {};
+    const hideCharges: Record<string, number> = {};
     playerIds.forEach((id, i) => {
       spawns[id] = i;
-      if (id !== seeker) alive[id] = true;
+      if (id !== seeker) {
+        alive[id] = true;
+        hideCharges[id] = HIDE_CHARGES;
+      }
     });
 
     const chaseSec =
@@ -61,6 +69,7 @@ export const GameRules = {
       seekerId: seeker,
       alive,
       spawns,
+      hideCharges,
       hidingEndsAt: now + GAME_TIMING.HIDING_SECONDS * 1000,
       chasingEndsAt: now + (GAME_TIMING.HIDING_SECONDS + chaseSec) * 1000,
       rev: prev.rev + 1,
@@ -69,6 +78,14 @@ export const GameRules = {
 
   /** 시간 경과에 따른 페이즈 전이 + 종료 판정. 변화가 없으면 같은 객체를 그대로 돌려준다 */
   tick(state: GameState, now: number): GameState {
+    // 만료된 숨기 정리
+    const expired = Object.keys(state.hidden).filter((id) => now >= state.hidden[id]);
+    if (expired.length > 0) {
+      const hidden = { ...state.hidden };
+      for (const id of expired) delete hidden[id];
+      state = { ...state, hidden, rev: state.rev + 1 };
+    }
+
     if (state.phase === 'HIDING' && state.hidingEndsAt && now >= state.hidingEndsAt) {
       return {
         ...state,
@@ -91,7 +108,7 @@ export const GameRules = {
   },
 
   /** 잡기 판정 — 순수 기하. 이번에 새로 잡힌 도망자 id 목록 */
-  detectCatches(state: GameState, positions: Record<string, PlayerPos>): string[] {
+  detectCatches(state: GameState, positions: Record<string, PlayerPos>, now: number): string[] {
     if (state.phase !== 'PLAYING' || !state.seekerId) return [];
     const seeker = positions[state.seekerId];
     if (!seeker) return [];
@@ -100,6 +117,7 @@ export const GameRules = {
     const caught: string[] = [];
     for (const id of Object.keys(state.alive)) {
       if (!state.alive[id]) continue;
+      if (this.isHidden(state, id, now)) continue; // 숨어 있으면 못 잡음
       const p = positions[id];
       if (!p || p.floor !== seeker.floor) continue;
       if (Math.hypot(p.x - seeker.x, p.y - seeker.y) <= reach) caught.push(id);
@@ -154,6 +172,30 @@ export const GameRules = {
     return {
       ...state,
       hintSpent: { ...state.hintSpent, [seekerId]: (state.hintSpent[seekerId] ?? 0) + cost },
+      rev: state.rev + 1,
+    };
+  },
+
+  /** 도망자가 지금 숨어 있는지 */
+  isHidden(state: GameState, id: string, now: number): boolean {
+    return (state.hidden[id] ?? 0) > now;
+  },
+
+  /**
+   * 도망자 숨기 시작 (심판이 호출). 남은 횟수를 1 소모하고 종료 시각을 건다.
+   * 조건 미달이면 원본 그대로.
+   */
+  startHide(state: GameState, hiderId: string, now: number): GameState {
+    if (state.phase !== 'PLAYING' || !state.alive[hiderId]) return state;
+    if (this.isHidden(state, hiderId, now)) return state;
+    if ((state.hideCharges[hiderId] ?? 0) <= 0) return state;
+    return {
+      ...state,
+      hidden: { ...state.hidden, [hiderId]: now + HIDE_DURATION_MS },
+      hideCharges: {
+        ...state.hideCharges,
+        [hiderId]: (state.hideCharges[hiderId] ?? 0) - 1,
+      },
       rev: state.rev + 1,
     };
   },

@@ -14,6 +14,7 @@ const FORWARD = [
   'api',
   'endgame',
   'stamina',
+  'hide',
 ] as const;
 export type CanvasEvent = (typeof FORWARD)[number];
 

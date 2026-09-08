@@ -2,7 +2,8 @@
  * 지피티개발/chars.png (라벨 붙은 6x6 프리뷰) → 게임용 스프라이트시트로 정리.
  *   node scripts/import-chars.mjs
  * 각 캐릭터를 잘라 균일 프레임에 발끝-중앙 정렬 후 축소.
- * 출력: public/assets/characters/chars.png (6열 x 6행), chibi.png (0행만)
+ * 출력: public/assets/characters/chars.png (6열 x 5행), chibi.png (1행만)
+ * (0행 '기본' 은 머리가 잘려서 제외 — 사원/대리/과장/부장/인턴 5종)
  */
 import { PNG } from 'pngjs';
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -66,7 +67,7 @@ console.log(`source char max ${maxW}x${maxH} → frame ${FW}x${FH} (scale ${scal
 
 // 2) 균일 시트로 재조립 (발끝 중앙 정렬, nearest-neighbor 축소)
 function buildSheet(rowFilter) {
-  const rows = rowFilter ?? [0, 1, 2, 3, 4, 5];
+  const rows = rowFilter ?? [1, 2, 3, 4, 5];
   const out = new PNG({ width: FW * 6, height: FH * rows.length });
   out.data.fill(0);
   rows.forEach((r, ri) => {
@@ -94,5 +95,5 @@ function buildSheet(rowFilter) {
 }
 
 writeFileSync('public/assets/characters/chars.png', PNG.sync.write(buildSheet()));
-writeFileSync('public/assets/characters/chibi.png', PNG.sync.write(buildSheet([0])));
+writeFileSync('public/assets/characters/chibi.png', PNG.sync.write(buildSheet([1])));
 console.log(`done. FRAME = { width: ${FW}, height: ${FH} }  → src/game/assets.ts 반영`);

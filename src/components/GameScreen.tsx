@@ -39,6 +39,12 @@ export function GameScreen({
     max: 100,
     sprinting: false,
   });
+  const [hide, setHide] = useState<{
+    canHide: boolean;
+    charges: number;
+    hidden: boolean;
+    hiddenUntil: number;
+  }>({ canHide: false, charges: 3, hidden: false, hiddenUntil: 0 });
 
   const selfId = room?.selfId ?? '';
 
@@ -70,6 +76,9 @@ export function GameScreen({
         break;
       case 'stamina':
         setStamina(payload as { value: number; max: number; sprinting: boolean });
+        break;
+      case 'hide':
+        setHide(payload as { canHide: boolean; charges: number; hidden: boolean; hiddenUntil: number });
         break;
     }
   }
@@ -117,6 +126,7 @@ export function GameScreen({
           api={api}
           endgame={endgame}
           stamina={stamina}
+          hide={hide}
           onStart={() => sync?.startGame(roster.map((r) => r.id))}
           onRestart={() => sync?.restart()}
         />

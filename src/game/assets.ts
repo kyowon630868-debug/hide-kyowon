@@ -38,12 +38,12 @@ export const FURNITURE_KEYS = [
 
 export const WINDOW_KEY = 'window-namsan';
 
-/** 캐릭터 스프라이트시트: 24x32 프레임 × 6
+/** 캐릭터 스프라이트시트: 47x64 프레임, 6열 (방향/걷기) × 5행 (종류)
  *  0 아래-정지 · 1 아래-걷기 · 2 위-정지 · 3 위-걷기 · 4 옆-정지 · 5 옆-걷기 */
 export const CHAR_SHEET = 'chars';
 export const CHAR_FRAME = { width: 47, height: 64 };
-/** 캐릭터 종류 (chars.png 의 행). 6열 × 6행. */
-export const CHAR_NAMES = ['기본', '사원', '대리', '과장', '부장', '인턴'] as const;
+/** 캐릭터 종류 (chars.png 의 행). 6열 × 5행. */
+export const CHAR_NAMES = ['사원', '대리', '과장', '부장', '인턴'] as const;
 export const CHAR_COUNT = CHAR_NAMES.length;
 
 /** playerId → 캐릭터 행 (0~5). 결정적 */

@@ -47,22 +47,19 @@
 }
 .lobby2__sky {
   position: absolute;
-  top: -4%;
-  left: -10%;
-  right: -10%;
-  height: 46%;
+  inset: 0;
   background-size: cover;
-  background-position: center 30%;
+  background-position: center;
   image-rendering: pixelated;
-  opacity: 0.5;
-  filter: blur(1px) saturate(1.1);
-  mask-image: linear-gradient(#000 30%, transparent);
-  -webkit-mask-image: linear-gradient(#000 30%, transparent);
+  opacity: 0.55;
+  filter: saturate(1.05);
 }
 .lobby2__vignette {
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse at center, transparent 40%, rgba(6, 7, 14, 0.85));
+  background:
+    linear-gradient(rgba(8, 9, 18, 0.35), rgba(8, 9, 18, 0.7)),
+    radial-gradient(ellipse at center, transparent 30%, rgba(6, 7, 14, 0.9));
 }
 .lobby2__inner {
   position: relative;
@@ -76,17 +73,13 @@
 .lobby2__head {
   text-align: center;
 }
-.lobby2__title {
-  margin: 0;
-  font-size: clamp(26px, 7vw, 36px);
-  font-weight: 900;
-  letter-spacing: 1px;
-  white-space: nowrap;
-  color: #fff;
-  text-shadow: 0 0 22px #6a63ff88, 0 3px 0 #000;
-}
-.lobby2__title span {
-  color: #7cf3ff;
+.lobby2__logo {
+  display: block;
+  width: min(420px, 82vw);
+  height: auto;
+  margin: 0 auto;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 6px 18px #000a);
 }
 .lobby2__tag {
   margin: 6px 0 0;
@@ -105,19 +98,6 @@
   background: rgba(18, 20, 38, 0.92);
   border: 1px solid #33385f;
   box-shadow: 0 20px 50px -12px #000a;
-}
-.lobby2__chibi {
-  position: absolute;
-  right: 12px;
-  top: -78px;
-  width: 96px;
-  height: 192px;
-  background-repeat: no-repeat;
-  background-size: 576px 192px; /* 시트 192x64 를 3배 */
-  background-position: 0 0; /* 프레임 0 (아래-정지) */
-  image-rendering: pixelated;
-  filter: drop-shadow(0 6px 8px #0008);
-  pointer-events: none;
 }
 .lobby2__field {
   display: flex;
@@ -140,30 +120,44 @@
 }
 .charpick {
   display: flex;
-  gap: 6px;
+  gap: 5px;
   justify-content: space-between;
 }
 .charpick__slot {
   flex: 1;
-  padding: 4px 2px 2px;
+  padding: 5px 2px 3px;
   border: 1px solid #2f3350;
-  border-radius: 8px;
+  border-radius: 9px;
   background: #0f1122;
   cursor: pointer;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
   overflow: hidden;
+  transition: transform 0.1s ease, border-color 0.1s ease;
+}
+.charpick__slot:hover {
+  transform: translateY(-2px);
 }
 .charpick__slot.is-on {
   border-color: #7cf3ff;
   background: #16233a;
-  box-shadow: 0 0 0 1px #7cf3ff inset;
+  box-shadow: 0 0 0 1px #7cf3ff inset, 0 0 16px -4px #7cf3ff88;
 }
 .charpick__sprite {
   width: 47px;
   height: 60px;
   background-repeat: no-repeat;
   image-rendering: pixelated;
+}
+.charpick__slot em {
+  font-size: 10px;
+  font-style: normal;
+  color: #7f85ac;
+}
+.charpick__slot.is-on em {
+  color: #cfe9ff;
 }
 
 .lobby2__create {
@@ -186,10 +180,28 @@
   font-weight: 500;
   opacity: 0.85;
 }
+.lobby2__create:disabled {
+  filter: grayscale(0.6) brightness(0.7);
+  cursor: default;
+  box-shadow: none;
+}
+.lobby2__join button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
 .lobby2__or {
-  text-align: center;
+  display: flex;
+  align-items: center;
+  gap: 10px;
   color: #6b7099;
-  font-size: 12px;
+  font-size: 11px;
+}
+.lobby2__or::before,
+.lobby2__or::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #2b2f4a;
 }
 .lobby2__join {
   display: flex;
@@ -248,11 +260,14 @@
 }
 .lobby2__hint {
   margin: 0;
-  max-width: 360px;
+  max-width: 380px;
   text-align: center;
-  color: #7f85ac;
+  color: #9096bd;
   font-size: 12px;
-  line-height: 1.6;
+  line-height: 1.7;
+}
+.lobby2__hint kbd {
+  margin: 0 1px;
 }
 
 .btn {
@@ -656,6 +671,95 @@ kbd {
   color: #fff;
   text-shadow: 0 1px 2px #000, 0 0 4px #000;
   letter-spacing: 0.5px;
+}
+
+/* 숨기 */
+.hidechip {
+  position: absolute;
+  bottom: 152px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgba(8, 9, 18, 0.82);
+  border: 1px solid #2b2f4a;
+  font: 12px/1 ui-monospace, Consolas, monospace;
+  color: #cdb9ff;
+  z-index: 34;
+}
+.hidechip.is-hidden {
+  border-color: #7d5cff;
+  box-shadow: 0 0 14px -2px #7d5cffaa;
+}
+.hidechip b {
+  display: flex;
+  gap: 3px;
+}
+.hidechip b i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1px solid #6b5bb0;
+}
+.hidechip b i.on {
+  background: #a98cff;
+  border-color: #a98cff;
+}
+.hideprompt {
+  position: absolute;
+  bottom: 96px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 7px 14px;
+  border-radius: 10px;
+  background: rgba(40, 28, 70, 0.95);
+  border: 1px solid #6b53c8;
+  color: #e9e2ff;
+  font-size: 13px;
+  z-index: 34;
+  animation: hbob 1s ease-in-out infinite alternate;
+}
+.hideprompt small {
+  color: #b6a6e8;
+  margin-left: 6px;
+}
+@keyframes hbob {
+  from {
+    transform: translate(-50%, 0);
+  }
+  to {
+    transform: translate(-50%, -3px);
+  }
+}
+.hidebanner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 14px 26px;
+  border-radius: 14px;
+  background: rgba(20, 14, 38, 0.82);
+  border: 1px solid #6b53c8;
+  color: #efe9ff;
+  font-size: 17px;
+  font-weight: 700;
+  z-index: 36;
+  backdrop-filter: blur(2px);
+}
+.hidebanner b {
+  color: #c9b3ff;
+  font-variant-numeric: tabular-nums;
+}
+.hidebanner small {
+  font-size: 11px;
+  font-weight: 500;
+  color: #a79ad0;
 }
 
 /* 막판 배너 */

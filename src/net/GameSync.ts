@@ -102,6 +102,15 @@ export class GameSync {
     }
   }
 
+  /** 도망자(로컬)가 숨기를 시도했음을 심판에게 알린다 */
+  reportHide(): void {
+    if (this.isHost) {
+      this.applyHide(this.room.selfId);
+    } else {
+      this.room.sendAction({ type: 'hide' });
+    }
+  }
+
   /**
    * 씬이 매 프레임 호출. positions 는 { playerId: {x,y,floor} }.
    * 비호스트에서는 아무 일도 하지 않는다.
@@ -116,7 +125,7 @@ export class GameSync {
     }
 
     if (this.state.phase === 'PLAYING') {
-      const caught = GameRules.detectCatches(this.state, positions);
+      const caught = GameRules.detectCatches(this.state, positions, now);
       if (caught.length > 0) {
         this.setState(GameRules.applyCatches(this.state, caught, now));
         this.broadcast();
@@ -137,8 +146,18 @@ export class GameSync {
 
   private onAction(fromId: string, body: unknown) {
     const msg = body as { type?: string; kind?: HintKind };
-    if (msg?.type !== 'hint') return;
-    this.applyHint(fromId, msg.kind ?? 'floor');
+    if (msg?.type === 'hint') {
+      this.applyHint(fromId, msg.kind ?? 'floor');
+    } else if (msg?.type === 'hide') {
+      this.applyHide(fromId);
+    }
+  }
+
+  private applyHide(hiderId: string) {
+    const next = GameRules.startHide(this.state, hiderId, Date.now());
+    if (next === this.state) return;
+    this.setState(next);
+    this.broadcast();
   }
 
   private applyHint(seekerId: string, _kind: HintKind) {
@@ -163,6 +182,7 @@ export class GameSync {
 
     for (const hiderId of Object.keys(s.alive)) {
       if (!s.alive[hiderId]) continue;
+      if (GameRules.isHidden(s, hiderId, now)) continue; // 숨는 중엔 회피 판정 안 함
       const hp = positions[hiderId];
       const t = this.evadeTrack.get(hiderId) ?? { dangerAt: 0, awardedAt: 0 };
 

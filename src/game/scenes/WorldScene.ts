@@ -4,6 +4,7 @@ import {
   ELEVATOR_TRAVEL_MS,
   ENDGAME_SECONDS,
   ENDGAME_SEEKER_BOOST,
+  HIDE_REACH,
   HINT_COOLDOWN_MS,
   PLAYER_SPEED,
   SEEKER_SPEED,
@@ -48,6 +49,11 @@ export class WorldScene extends Phaser.Scene {
   private tileLayer!: Phaser.GameObjects.Group;
   private floor: FloorMap = FLOOR_3;
   private elevatorTiles: Array<{ x: number; y: number }> = [];
+  /** 숨을 수 있는 가구 위치 (현재 층) */
+  private hideSpots: Array<{ x: number; y: number }> = [];
+  private hideKey!: Phaser.Input.Keyboard.Key;
+  private lastHideKey = false;
+  private lastHideHudKey = '';
 
   private room: Room | null = null;
   private sync: GameSync | null = null;
@@ -84,6 +90,7 @@ export class WorldScene extends Phaser.Scene {
     const spawn = this.pickSpawn();
     this.player = new LocalPlayer(this, spawn.x, spawn.y, myName, this.room?.selfChar ?? 0);
     this.physics.add.collider(this.player, this.walls);
+    this.hideKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.F);
 
     this.cameras.main.startFollow(this.player, true, 0.12, 0.12);
     this.cameras.main.setZoom(PLAY_ZOOM);
@@ -105,12 +112,14 @@ export class WorldScene extends Phaser.Scene {
     });
   }
 
-  /** 조작 가능 여부 = 페이즈 동결(숨기 술래) · 엘리베이터 이동 중 · UI(층 선택 등) 열림 을 모두 고려 */
+  /** 조작 가능 여부 = 페이즈 동결(숨기 술래) · 엘리베이터 이동 중 · UI(층 선택 등) 열림 · 숨는 중 을 모두 고려 */
   private refreshControl() {
     const s = this.sync?.getState();
-    const myRole = s ? GameRules.roleOf(s, this.room?.selfId ?? '') : null;
+    const myId = this.room?.selfId ?? '';
+    const myRole = s ? GameRules.roleOf(s, myId) : null;
     const frozen = s?.phase === 'HIDING' && myRole === 'SEEKER';
-    this.player.setControlEnabled(!frozen && !this.traveling && !this.uiLocked);
+    const hidden = s ? GameRules.isHidden(s, myId, Date.now()) : false;
+    this.player.setControlEnabled(!frozen && !this.traveling && !this.uiLocked && !hidden);
   }
 
   update() {
@@ -130,7 +139,54 @@ export class WorldScene extends Phaser.Scene {
     this.updateProximity(s);
     this.updateElevatorProximity();
     this.updateSpeedAndEndgame(s);
+    this.updateHide(s);
     this.emitStamina();
+  }
+
+  // ── 숨기 ───────────────────────────────────────────────────
+
+  private updateHide(s: GameState) {
+    const myId = this.room?.selfId ?? '';
+    const now = Date.now();
+    const iAmHider = s.phase === 'PLAYING' && !!s.alive[myId];
+    const hiddenUntil = s.hidden[myId] ?? 0;
+    const amHidden = hiddenUntil > now;
+    const charges = s.hideCharges[myId] ?? 0;
+
+    const nearSpot =
+      iAmHider &&
+      this.hideSpots.some(
+        (h) => Phaser.Math.Distance.Between(h.x, h.y, this.player.x, this.player.y) <= HIDE_REACH,
+      );
+    const canHide = !!nearSpot && !amHidden && charges > 0;
+
+    // F 키 엣지 트리거
+    const down = this.hideKey.isDown;
+    if (down && !this.lastHideKey && canHide) {
+      this.sync?.reportHide();
+      this.cameras.main.flash(120, 90, 160, 220);
+    }
+    this.lastHideKey = down;
+
+    // 내 캐릭터: 숨는 중이면 반투명 + 정지 유지
+    if (iAmHider) {
+      this.player.setControlEnabled(
+        !amHidden && !this.traveling && !this.uiLocked,
+      );
+      this.player.setAlpha(amHidden ? 0.35 : 1);
+      if (amHidden) (this.player.body as Phaser.Physics.Arcade.Body).setVelocity(0, 0);
+    }
+
+    const key = `${canHide}|${charges}|${amHidden}|${Math.ceil((hiddenUntil - now) / 500)}`;
+    if (key !== this.lastHideHudKey) {
+      this.lastHideHudKey = key;
+      this.game.events.emit('hide', {
+        canHide,
+        charges,
+        hidden: amHidden,
+        hiddenUntil: amHidden ? hiddenUntil : 0,
+      });
+    }
   }
 
   private emitStamina() {
@@ -319,6 +375,15 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private paint(sprite: LocalPlayer | RemotePlayer, id: string, s: GameState, isLocal: boolean) {
+    // 다른 사람이 숨는 중이면 화면에서 사라진다 (본인은 updateHide 에서 반투명 처리)
+    if (!isLocal && GameRules.isHidden(s, id, Date.now())) {
+      sprite.setVisible(false);
+      (sprite as RemotePlayer).label?.setVisible(false);
+      return;
+    }
+    sprite.setVisible(true);
+    if (!isLocal) (sprite as RemotePlayer).label?.setVisible(true);
+
     const caught = id in s.alive && !s.alive[id];
     if (caught) {
       sprite.setTint(CAUGHT_TINT);
@@ -433,6 +498,7 @@ export class WorldScene extends Phaser.Scene {
     this.tileLayer.clear(true, true);
     this.walls.clear(true, true);
     this.elevatorTiles = [];
+    this.hideSpots = [];
 
     const legacyTint = floor.floorTint; // 아직 안 꾸민 1·5층
 
@@ -491,6 +557,7 @@ export class WorldScene extends Phaser.Scene {
         body.setSize(s.width * 0.8, Math.max(12, s.height * 0.5));
         body.position.set(s.x - body.width / 2, s.y + s.height / 2 - body.height);
         body.updateCenter();
+        this.hideSpots.push({ x, y }); // 고정 가구 뒤엔 숨을 수 있다
       } else {
         this.tileLayer.add(this.add.image(x, y, p.kind).setDepth(4));
       }

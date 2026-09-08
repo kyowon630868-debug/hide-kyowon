@@ -47,6 +47,11 @@ export const EVADE_SAFE_TILES = 8;
 export const HINT_NEAR_TILES = 5;
 export const HINT_FAR_TILES = 12;
 
+/** 숨기: 도망자가 가구 근처에서 F 로 잠깐 사라진다 */
+export const HIDE_CHARGES = 3; // 한 게임에 쓸 수 있는 횟수
+export const HIDE_DURATION_MS = 5000; // 한 번 숨으면 유지되는 시간
+export const HIDE_REACH = 46; // 가구와 이 거리 안이면 숨기 가능 (px)
+
 /** 엘리베이터 상호작용 가능 거리 (px) */
 export const ELEVATOR_REACH = 60;
 /** 엘리베이터 이동 연출 시간 (ms) */

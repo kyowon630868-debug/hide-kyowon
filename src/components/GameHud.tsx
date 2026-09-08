@@ -30,6 +30,7 @@ interface Props {
   api: HudApi | null;
   endgame: { active: boolean; seeker: boolean; dir: string };
   stamina: { value: number; max: number; sprinting: boolean };
+  hide: { canHide: boolean; charges: number; hidden: boolean; hiddenUntil: number };
   onStart: () => void;
   onRestart: () => void;
 }
@@ -71,7 +72,7 @@ function hintText(r: HintResult): string {
 }
 
 export function GameHud(props: Props) {
-  const { state, roster, selfId, isHost, floorName, floorId, proximity, elevatorNear, traveling, hint, api, endgame, stamina } =
+  const { state, roster, selfId, isHost, floorName, floorId, proximity, elevatorNear, traveling, hint, api, endgame, stamina, hide } =
     props;
   const now = useNow(state.phase === 'HIDING' || state.phase === 'PLAYING');
   const role = GameRules.roleOf(state, selfId);
@@ -248,7 +249,7 @@ export function GameHud(props: Props) {
           <div className="waitbar__row">
             <b>게임 대기 중</b>
             <span className="muted">
-              참여 {roster.length}/5 · 이동 WASD · <kbd>Shift</kbd> 달리기 · <kbd>H</kbd> 도움말
+              참여 {roster.length}/5 · <kbd>방향키</kbd> 이동 · <kbd>Shift</kbd>+방향키 달리기 · <kbd>H</kbd> 도움말
             </span>
           </div>
           <div className="waitbar__row">
@@ -291,9 +292,35 @@ export function GameHud(props: Props) {
             style={{ width: `${(stamina.value / stamina.max) * 100}%` }}
           />
           <span className="stamina__label">
-            {stamina.sprinting ? '⚡ 달리는 중' : '⚡ Shift · Space 달리기'}
+            {stamina.sprinting ? '⚡ 달리는 중!' : '⚡ Shift + 방향키 = 달리기'}
           </span>
         </div>
+      )}
+
+      {/* 숨기 — 도망자 전용 */}
+      {state.phase === 'PLAYING' && role === 'HIDER' && !introActive && (
+        <>
+          <div className={`hidechip ${hide.hidden ? 'is-hidden' : ''}`}>
+            🫥 숨기
+            <b>
+              {[0, 1, 2].map((i) => (
+                <i key={i} className={i < hide.charges ? 'on' : ''} />
+              ))}
+            </b>
+          </div>
+          {hide.hidden ? (
+            <div className="hidebanner">
+              🫥 숨는 중… <b>{Math.max(0, (hide.hiddenUntil - now) / 1000).toFixed(1)}s</b>
+              <small>움직이면 티나요 — 가만히</small>
+            </div>
+          ) : (
+            hide.canHide && (
+              <div className="hideprompt">
+                <kbd>F</kbd> 여기 숨기 <small>남은 {hide.charges}회</small>
+              </div>
+            )
+          )}
+        </>
       )}
 
       {endgame.active && (
