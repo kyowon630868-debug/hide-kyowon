@@ -22,20 +22,22 @@ export class LocalPlayer extends Phaser.Physics.Arcade.Sprite {
   private movingNow = false;
   private controlEnabled = true;
   private speed = PLAYER_SPEED;
+  private readonly charRow: number;
   /** 부스터 자원 0~100 */
   stamina = STAMINA_MAX;
   sprinting = false;
   private tired = false; // 스태미나 바닥 → 조금 찰 때까지 못 달림
   readonly label: Phaser.GameObjects.Text;
 
-  constructor(scene: Phaser.Scene, x: number, y: number, nickname: string) {
-    super(scene, x, y, CHAR_SHEET, 0);
+  constructor(scene: Phaser.Scene, x: number, y: number, nickname: string, charRow = 0) {
+    super(scene, x, y, CHAR_SHEET, charRow * 6);
+    this.charRow = charRow;
     scene.add.existing(this);
     scene.physics.add.existing(this);
 
-    // 충돌 박스는 발밑만 (32x64 프레임 기준)
-    this.setSize(14, 10);
-    this.setOffset(9, 50);
+    // 충돌 박스는 발밑만 (47x64 프레임 기준)
+    this.setSize(16, 9);
+    this.setOffset(16, 53);
     this.setCollideWorldBounds(true);
     this.setDepth(10);
 
@@ -77,7 +79,7 @@ export class LocalPlayer extends Phaser.Physics.Arcade.Sprite {
   forceFacing(dir: Direction) {
     this.facing = dir;
     this.movingNow = false;
-    applyCharAnim(this, dir, false);
+    applyCharAnim(this, dir, false, this.charRow);
   }
 
   preUpdate(time: number, delta: number) {
@@ -88,8 +90,7 @@ export class LocalPlayer extends Phaser.Physics.Arcade.Sprite {
       this.movingNow = false;
       this.sprinting = false;
       this.regenStamina(delta);
-      applyCharAnim(this, this.facing, false);
-      this.anims.timeScale = 1;
+      applyCharAnim(this, this.facing, false, this.charRow);
       this.label.setPosition(this.x, this.y - 40);
       return;
     }
@@ -117,7 +118,6 @@ export class LocalPlayer extends Phaser.Physics.Arcade.Sprite {
     const spd = this.speed * (this.sprinting ? SPRINT_MULT : 1);
     const len = Math.hypot(vx, vy) || 1;
     this.setVelocity((vx / len) * spd, (vy / len) * spd);
-    this.anims.timeScale = this.sprinting ? 1.7 : 1;
 
     this.movingNow = moving;
     if (moving) {
@@ -125,7 +125,7 @@ export class LocalPlayer extends Phaser.Physics.Arcade.Sprite {
       if (Math.abs(vx) > Math.abs(vy)) this.facing = vx > 0 ? 'right' : 'left';
       else this.facing = vy > 0 ? 'down' : 'up';
     }
-    applyCharAnim(this, this.facing, moving);
+    applyCharAnim(this, this.facing, moving, this.charRow, this.sprinting);
 
     this.label.setPosition(this.x, this.y - 40);
   }
@@ -137,6 +137,7 @@ export class LocalPlayer extends Phaser.Physics.Arcade.Sprite {
       y: Math.round(this.y),
       dir: this.facing,
       moving: this.movingNow,
+      char: this.charRow,
     };
   }
 

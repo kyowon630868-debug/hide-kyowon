@@ -43,6 +43,7 @@ export class Room {
   readonly code: string;
   readonly selfId: string;
   readonly selfName: string;
+  readonly selfChar: number;
 
   private transport: Transport;
   private roster = new Map<string, RosterEntry>();
@@ -62,6 +63,7 @@ export class Room {
   constructor(opts: RoomOptions) {
     this.code = opts.code.toUpperCase();
     this.selfName = opts.name;
+    this.selfChar = opts.char;
     this.selfId = getPlayerId();
 
     const useSupabase = opts.mode === 'supabase' && hasSupabase;
@@ -173,6 +175,7 @@ export class Room {
 
     this.emit('snapshot', {
       ...snap,
+      char: snap.char ?? 0,
       id: fromId,
       name: this.roster.get(fromId)?.name ?? '손님',
     });

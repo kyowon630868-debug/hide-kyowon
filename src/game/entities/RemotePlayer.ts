@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import type { Direction, PlayerSnapshot } from '../../types/game';
 import { NET } from '../constants';
-import { CHAR_SHEET } from '../assets';
+import { CHAR_COUNT, CHAR_SHEET } from '../assets';
 import { applyCharAnim } from './playerAnim';
 
 interface Sample {
@@ -20,12 +20,15 @@ interface Sample {
 export class RemotePlayer extends Phaser.GameObjects.Sprite {
   private buffer: Sample[] = [];
   private lastDir: Direction = 'down';
+  private readonly charRow: number;
   /** 이 플레이어가 있는 층 (씬의 층 필터에 사용) */
   floor: number;
   readonly label: Phaser.GameObjects.Text;
 
   constructor(scene: Phaser.Scene, snap: PlayerSnapshot) {
-    super(scene, snap.x, snap.y, CHAR_SHEET, 0);
+    const charRow = ((snap.char ?? 0) % CHAR_COUNT + CHAR_COUNT) % CHAR_COUNT;
+    super(scene, snap.x, snap.y, CHAR_SHEET, charRow * 6);
+    this.charRow = charRow;
     scene.add.existing(this);
     this.setDepth(9);
     this.floor = snap.floor;
@@ -91,7 +94,7 @@ export class RemotePlayer extends Phaser.GameObjects.Sprite {
 
   private applyFacing(dir: Direction, moving: boolean) {
     this.lastDir = dir;
-    applyCharAnim(this, dir, moving);
+    applyCharAnim(this, dir, moving, this.charRow);
   }
 
   destroy(fromScene?: boolean): void {

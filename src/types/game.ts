@@ -11,6 +11,8 @@ export interface PlayerSnapshot {
   floor: number;
   dir: Direction;
   moving: boolean;
+  /** 캐릭터 종류 (chars 시트의 행 0~5) */
+  char: number;
 }
 
 /** 로컬 캐릭터가 매 프레임 만들어내는 부분 스냅샷 (id·name 은 Room 이 채운다) */
@@ -42,4 +44,6 @@ export interface RoomOptions {
   mode: RoomMode;
   /** 방 만들기로 들어왔는가 (= 이 브라우저가 심판/방장) */
   isHost: boolean;
+  /** 선택한 캐릭터 (chars 시트 행 0~5) */
+  char: number;
 }

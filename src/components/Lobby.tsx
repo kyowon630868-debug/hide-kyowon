@@ -1,15 +1,18 @@
 import { useState } from 'react';
 import { hasSupabase } from '../lib/supabase';
 import { makeRoomCode } from '../lib/id';
-import { assetUrl } from '../game/assets';
+import { assetUrl, CHAR_FRAME, CHAR_NAMES } from '../game/assets';
 import type { RoomMode, RoomOptions } from '../types/game';
 
 const CODE_RE = /^[A-Za-z0-9]{4}$/;
+const SHEET_W = CHAR_FRAME.width * 6;
+const SHEET_H = CHAR_FRAME.height * 6;
 
 export function Lobby({ onEnter }: { onEnter: (opts: RoomOptions) => void }) {
   const [name, setName] = useState('');
   const [code, setCode] = useState('');
   const [mode, setMode] = useState<RoomMode>(hasSupabase ? 'supabase' : 'local');
+  const [char, setChar] = useState(() => Math.floor(Math.random() * CHAR_NAMES.length));
   const [error, setError] = useState('');
 
   const nick = name.trim();
@@ -18,7 +21,7 @@ export function Lobby({ onEnter }: { onEnter: (opts: RoomOptions) => void }) {
     setError('');
     if (!nick) return setError('닉네임을 입력하세요.');
     if (!CODE_RE.test(roomCode)) return setError('방 코드는 영문/숫자 4자리입니다.');
-    onEnter({ code: roomCode.toUpperCase(), name: nick, mode, isHost });
+    onEnter({ code: roomCode.toUpperCase(), name: nick, mode, isHost, char });
   }
 
   return (
@@ -51,6 +54,30 @@ export function Lobby({ onEnter }: { onEnter: (opts: RoomOptions) => void }) {
               onKeyDown={(e) => e.key === 'Enter' && enter(makeRoomCode(), true)}
             />
           </label>
+
+          <div className="lobby2__field">
+            <span>캐릭터 — {CHAR_NAMES[char]}</span>
+            <div className="charpick">
+              {CHAR_NAMES.map((nm, i) => (
+                <button
+                  key={nm}
+                  type="button"
+                  title={nm}
+                  className={`charpick__slot ${i === char ? 'is-on' : ''}`}
+                  onClick={() => setChar(i)}
+                >
+                  <span
+                    className="charpick__sprite"
+                    style={{
+                      backgroundImage: `url(${assetUrl('characters/chars.png')})`,
+                      backgroundSize: `${SHEET_W}px ${SHEET_H}px`,
+                      backgroundPosition: `0px -${i * CHAR_FRAME.height}px`,
+                    }}
+                  />
+                </button>
+              ))}
+            </div>
+          </div>
 
           <button className="lobby2__create" onClick={() => enter(makeRoomCode(), true)}>
             방 만들기

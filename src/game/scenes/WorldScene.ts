@@ -82,7 +82,7 @@ export class WorldScene extends Phaser.Scene {
     this.buildFloor(this.floor);
 
     const spawn = this.pickSpawn();
-    this.player = new LocalPlayer(this, spawn.x, spawn.y, myName);
+    this.player = new LocalPlayer(this, spawn.x, spawn.y, myName, this.room?.selfChar ?? 0);
     this.physics.add.collider(this.player, this.walls);
 
     this.cameras.main.startFollow(this.player, true, 0.12, 0.12);

@@ -138,6 +138,34 @@
   outline: none;
   border-color: #6a63ff;
 }
+.charpick {
+  display: flex;
+  gap: 6px;
+  justify-content: space-between;
+}
+.charpick__slot {
+  flex: 1;
+  padding: 4px 2px 2px;
+  border: 1px solid #2f3350;
+  border-radius: 8px;
+  background: #0f1122;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  overflow: hidden;
+}
+.charpick__slot.is-on {
+  border-color: #7cf3ff;
+  background: #16233a;
+  box-shadow: 0 0 0 1px #7cf3ff inset;
+}
+.charpick__sprite {
+  width: 47px;
+  height: 60px;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+}
+
 .lobby2__create {
   display: flex;
   flex-direction: column;

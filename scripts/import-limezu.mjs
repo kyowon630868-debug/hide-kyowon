@@ -143,13 +143,8 @@ function buildChar(name) {
   return sheet;
 }
 
-// 4캐릭터를 세로로 쌓은 시트 (row = characterId). 지금은 chibi = Adam 만 써도 됨.
-const CHARS = ['Adam', 'Alex', 'Amelia', 'Bob'];
-const chars = new PNG({ width: FW * 6, height: FH * CHARS.length });
-chars.data.fill(0);
-CHARS.forEach((n, r) => blit(chars, buildChar(n), 0, r * FH));
-save('characters/chars.png', chars); // 192x256
-save('characters/chibi.png', buildChar('Adam')); // 192x64
+// 캐릭터는 사용자 아트를 씀 → scripts/import-chars.mjs (지피티개발/chars.png)
+// (LimeZu 캐릭터 필요 시: buildChar('Adam') 등으로 시트 생성)
 
 // ── 가구 (Interiors_free_32x32) ──────────────────────────
 // 좌표는 scripts/_blobs.mjs 로 확인한 아틀라스 절대 픽셀.
